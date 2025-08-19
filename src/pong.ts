@@ -1,26 +1,99 @@
+class TextObject extends GameObject {
+    text: string;
+    font: string;
+    color: string;
+
+    constructor(
+        text: string,
+        position: Point2D,
+        game: PongGame,
+        font: string = "20px Arial",
+        color: string = "black",
+    ) {
+        super(position, game);
+        this.text = text;
+        this.font = font;
+        this.color = color;
+        this.hitbox = null;
+        this.name = "string";
+    }
+
+    Draw() {
+        this.ctx.font = this.font;
+        this.ctx.fillStyle = this.color;
+        const textWidth = this.ctx.measureText(this.text).width;
+        const x = this.getWorldPosition().x - textWidth / 2;
+        const y = this.getWorldPosition().y;
+        this.ctx.fillText(this.text, x, y);
+
+        
+    }
+}
 
 import { Point2D, Vector2D } from './Coordinates'
 import { GameObject, Sprite, HitBox} from './GameUtils'
 
 
 
+function randomBetween(min: number, max: number): number {
+    return Math.random() * (max - min) + min;
+}
+
+class GameSettings {
+    playerAcceleration: number = 1;
+    playerCount: number = 2;
+    ballSpeed: number = 10;
+}
+
 
 
 class Ball extends GameObject{
-    image: HTMLImageElement;
+
+    rotationAcceleration: number = 0;
+    rotationVelocity: number = 0;
+
+    collided: boolean = false;
+    static MAX_BOUNCE_ANGLE = Math.PI / 3;
+    static SPEED = 4;
+    
+    hitbox: HitBox; // not nullable
 
     constructor(startingPosition: Point2D, parent: PongGame) {
         super(startingPosition, parent);
         this.size = new Vector2D(35, 35); // Example size, adjust as needed
-        this.sprite = new Sprite("f3.png", new Vector2D(60, 60));
+        this.sprite = new Sprite("assets/pacman.png", new Vector2D(60, 60));
 
         this.hitbox = new HitBox(this, this.sprite.size);
         this.name = "ball";
 
         this.onCollide = (other) => {
-            console.log(`${this.name} collides with ${other.name}`);
+            if (other instanceof Padel) {
+                const paddleCenterY = other.position.y + other.hitbox!.size.y / 2;
+                const ballCenterY = this.position.y + this.hitbox.size.y / 2;
+
+                const relativeIntersectY = (ballCenterY - paddleCenterY);
+                const normalizedIntersectY = relativeIntersectY / (this.game.canvasSize.y / 2);
+                const bounceAngle = normalizedIntersectY * Ball.MAX_BOUNCE_ANGLE;
+                const direction = other.team === "player1" ? -1 : 1;
+                this.collided = true;
+                this.velocity.x = this.game.gameSettings.ballSpeed * Math.cos(bounceAngle) * direction;
+                this.velocity.y = this.game.gameSettings.ballSpeed * Math.sin(bounceAngle);
+                this.rotationVelocity = 0.4;
+            }
             return true;
         };
+
+        
+        this.onUpdate = () => {
+            this.sprite.rotation += this.rotationVelocity;
+            this.rotationVelocity *= 0.98;
+            console.log(`rotation ${this.sprite.rotation}`);
+            if (this.position.y - this.hitbox.size.y/2 < 0)
+                this.position.y = this.hitbox.size.y/2;
+            if (this.position.y + this.hitbox.size.y/2 > this.game.canvasSize.y)
+                this.position.y = this.game.canvasSize.y - this.hitbox.size.y/2;
+            return true;
+        }
     }
     
 }
@@ -29,30 +102,42 @@ class Padel extends GameObject {
     isMoving: boolean;
     moveUpKey: string = "ArrowUp";
     moveDownKey: string = "ArrowDown";
-    
+    team: string;
+
     constructor(
             startingPosition: Point2D, 
-            parent: PongGame,
+            game: PongGame,
+            team: string,
             moveDownKey: string = "ArrowDown",
-            moveUpKey: string = "ArrowUp"
+            moveUpKey: string = "ArrowUp",
         ) {
             
-        super(startingPosition, parent);
-        this.name = "padel";
+        super(startingPosition, game);
+        
+        let test = new TextObject("Player 2", new Point2D(0, -40), game);
+        this.children.push(test);
+        test.parent = this;
+        
+        this.name = this.constructor.name;
+        this.team = team;
 
         this.moveDownKey = moveDownKey;
         this.moveUpKey = moveUpKey;
+        this.maximumVelocity = new Vector2D(
+            this.game.gameSettings.playerAcceleration * 10, 
+            this.game.gameSettings.playerAcceleration * 10
+        );
 
-        this.sprite = new Sprite("BloxyCola.png", new Vector2D(60, 60));
+        this.sprite = new Sprite("assets/ghost.png", new Vector2D(60, 60));
         this.hitbox = new HitBox(this);
         
         window.addEventListener("keydown", (event) => {
             if (event.key === this.moveUpKey) {
-                this.acceleration.y = -0.5;
+                this.acceleration.y = -this.game.gameSettings.playerAcceleration;
                 this.isMoving = true;
             }
             if (event.key === this.moveDownKey) {
-                this.acceleration.y = 0.5;
+                this.acceleration.y = this.game.gameSettings.playerAcceleration;
                 this.isMoving = true;
             }
         });
@@ -63,6 +148,12 @@ class Padel extends GameObject {
                 this.isMoving = false;
             } 
         });
+
+        this.onUpdate = () => {
+            this.velocity.y *= 0.9;
+            if (Math.abs(this.velocity.y) < 0.1) this.velocity.y = 0;
+            return true;
+        }
     }
 }
 
@@ -70,10 +161,13 @@ class Padel extends GameObject {
 export class PongGame {
     canvas: HTMLCanvasElement;
     ctx: CanvasRenderingContext2D;
+    canvasSize: Vector2D;
+
     gameObjects: GameObject[] = [];
     player1: Padel;
     player2: Padel;
     ball: Ball;
+    gameSettings: GameSettings = new GameSettings();
 
     drawCircle(
         pos: Point2D, 
@@ -100,11 +194,11 @@ export class PongGame {
 
     
     renderFrame() {
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.ctx.fillStyle = "#aaaaaa";
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
         for (const obj of this.gameObjects) {
             obj.Draw();
-            if (obj.previewHitbox) obj.previewHitbox();
         }
     }
 
@@ -120,12 +214,22 @@ export class PongGame {
 
 
     addObject(object: GameObject) {
+        console.log(`object added ${object.name}`)
         this.gameObjects.push(object);
+        if (object.children && object.children.length > 0) {
+            for (const child of object.children) {
+                this.addObject(child);
+            }
+        }
     }
 
 
     constructor(canvas: HTMLCanvasElement) {
         this.canvas = canvas;
+        this.canvasSize = new Vector2D(800, 400); // Set desired canvas size here
+        this.canvas.width = this.canvasSize.x;
+        this.canvas.height = this.canvasSize.y;
+
         let ctx = this.canvas.getContext('2d');
         if (!ctx) {
             console.error("Canvas 2D context not available");
@@ -133,13 +237,19 @@ export class PongGame {
         }
         this.ctx = ctx;
 
-        this.player1 = new Padel(new Point2D(100, 100), this);
-        this.player2 = new Padel(new Point2D(100, 0), this, "s", "w");
+        this.player1 = new Padel(new Point2D(600, 0), this, "player1");
+        this.player2 = new Padel(new Point2D(20, 0), this, "player2", "s", "w");
+
         this.ball = new Ball(new Point2D(100, 100), this);
+        this.ball.velocity.x = 5;
 
         this.addObject(this.ball);
         this.addObject(this.player1);
         this.addObject(this.player2);
+
+        // Add TextObjects for player names above paddles
+        // this.addObject(new TextObject("Player 1", new Point2D(100, 100), this));
+        // this.addObject(new TextObject("Player 2", new Point2D(100, 100), this));
 
         this.loop();
     }

@@ -1,6 +1,21 @@
 import { Point2D, Vector2D } from './Coordinates'
 import type { PongGame } from './pong';
 
+function drawRotatedImage(
+    ctx: CanvasRenderingContext2D,
+    image: HTMLImageElement,
+    x: number, // center x
+    y: number, // center y
+    width: number,
+    height: number,
+    angle: number // in radians
+) {
+    ctx.save();
+    ctx.translate(x + width / 2, y + height / 2); // Move to center of image
+    ctx.rotate(angle);
+    ctx.drawImage(image, -width / 2, -height / 2, width, height); // Draw centered
+    ctx.restore();
+}
 
 export class GameObject {
     position: Point2D;
@@ -11,24 +26,36 @@ export class GameObject {
 
     size: Vector2D;
     sprite: Sprite;
-    hitbox: HitBox;
+    hitbox: HitBox | null;
     ctx: CanvasRenderingContext2D;
     
-    parent: PongGame
+    parent: GameObject | null;
+    children: GameObject[] = [];
+
+    game: PongGame
+
     collisions: GameObject[] = [];
 
     onCollide?: (other: GameObject) => boolean;
+    onUpdate?: () => boolean;
 
-    constructor(startingPosition: Point2D, parent: PongGame) {
+    constructor(startingPosition: Point2D, game: PongGame, parent=null) {
         this.position = startingPosition;
+        this.game = game;
+        this.ctx = game.ctx;
         this.parent = parent;
-        this.ctx = parent.ctx;
+    }
+
+    addChild(object:GameObject) {
+        this.children.push(object);
+        object.parent = this;
     }
 
     Draw() {
         const x = this.position.x - this.sprite.size.x / 2;
         const y = this.position.y - this.sprite.size.y / 2;
-        this.ctx.drawImage(this.sprite.image, x, y, this.sprite.size.x, this.sprite.size.y);
+        // this.ctx.drawImage(this.sprite.image, x, y, this.sprite.size.x, this.sprite.size.y);
+        drawRotatedImage(this.ctx, this.sprite.image, x, y, this.sprite.size.x, this.sprite.size.y, this.sprite.rotation);
     }
 
     previewHitbox() {
@@ -39,6 +66,13 @@ export class GameObject {
         this.ctx.strokeStyle = "blue";
         this.ctx.strokeRect(x, y, this.hitbox.size.x, this.hitbox.size.y);
         this.ctx.restore();
+    }
+
+    getWorldPosition(): Point2D {
+        if (!this.parent) return this.position;
+        const parentPos = this.parent.getWorldPosition();
+        // Add rotation/scale logic as needed
+        return new Point2D(parentPos.x + this.position.x, parentPos.y + this.position.y);
     }
 
     update() {
@@ -60,25 +94,30 @@ export class GameObject {
         this.position.x += this.velocity.x;
         this.position.y += this.velocity.y;
 
-        this.velocity.y *= 0.9;
-        if (Math.abs(this.velocity.y) < 0.1) this.velocity.y = 0;
 
         this.collisions = [];
-        for (const obj of this.parent.gameObjects) {
-            if (obj !== this && this.hitbox.isCollidingWith(obj.hitbox)) {
+        for (const obj of this.game.gameObjects) {
+            if (
+                obj !== this &&
+                this.hitbox !== null &&
+                obj.hitbox !== null &&
+                this.hitbox.isCollidingWith(obj.hitbox)
+            ) {
                 this.collisions.push(obj);
                 if (this.onCollide) {
                     this.onCollide(obj);
                 }
             }
-            
         }
+        if (this.onUpdate)
+            this.onUpdate();
     }
 }
 
 export class Sprite {
     image: HTMLImageElement;
     size: Vector2D;
+    rotation: number = 0;
 
     constructor(imagePath: string, size: Vector2D | null = null) {
         this.image = new Image();

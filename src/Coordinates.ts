@@ -17,6 +17,14 @@ export class Point2D {
     add(other: Vector2D) {
         this.x += other.x;
         this.y += other.y;
+        return this;
+    }
+
+    subtract(other: Vector2D) {
+        return new Point2D(this.x - other.x, this.y - other.y);
+    }
+    divide(other: Vector2D) {
+        return new Point2D(this.x / other.x, this.y / other.y);
     }
 }
 
@@ -36,6 +44,14 @@ export class Vector2D {
     add(other: Vector2D) {
         this.x += other.x;
         this.y += other.y;
+    }
+
+    
+    subtract(other: Vector2D) {
+        return new Vector2D(this.x - other.x, this.y - other.y);
+    }
+    divide(other: Vector2D) {
+        return new Vector2D(this.x / other.x, this.y / other.y);
     }
 }
 

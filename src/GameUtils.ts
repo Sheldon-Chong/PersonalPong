@@ -1,4 +1,5 @@
 import { Point2D, Vector2D } from './Coordinates'
+import type { PongGame } from './pong';
 
 
 export class GameObject {
@@ -6,15 +7,22 @@ export class GameObject {
     velocity: Vector2D = new Vector2D(0, 0);
     acceleration: Vector2D = new Vector2D(0, 0);
     maximumVelocity: Vector2D = new Vector2D(5,5);
+    name: string;
 
     size: Vector2D;
     sprite: Sprite;
     hitbox: HitBox;
     ctx: CanvasRenderingContext2D;
+    
+    parent: PongGame
+    collisions: GameObject[] = [];
 
-    constructor(startingPosition: Point2D, ctx: CanvasRenderingContext2D) {
+    onCollide?: (other: GameObject) => boolean;
+
+    constructor(startingPosition: Point2D, parent: PongGame) {
         this.position = startingPosition;
-        this.ctx = ctx;
+        this.parent = parent;
+        this.ctx = parent.ctx;
     }
 
     Draw() {
@@ -54,6 +62,17 @@ export class GameObject {
 
         this.velocity.y *= 0.9;
         if (Math.abs(this.velocity.y) < 0.1) this.velocity.y = 0;
+
+        this.collisions = [];
+        for (const obj of this.parent.gameObjects) {
+            if (obj !== this && this.hitbox.isCollidingWith(obj.hitbox)) {
+                this.collisions.push(obj);
+                if (this.onCollide) {
+                    this.onCollide(obj);
+                }
+            }
+            
+        }
     }
 }
 
@@ -73,8 +92,21 @@ export class Sprite {
 
 export class HitBox{
     size: Vector2D;
-    constructor(size: Vector2D = new Vector2D(30,50)) {
+    parent: GameObject
+
+    constructor(parent: GameObject, size: Vector2D = new Vector2D(30,50)) {
+        this.parent = parent;
         this.size = size;
+    }
+
+    isCollidingWith(other: HitBox): boolean {
+        const aPos = this.parent.position;
+        const bPos = other.parent.position;
+        // Simple AABB collision
+        return (
+            Math.abs(aPos.x - bPos.x) < (this.size.x + other.size.x) / 2 &&
+            Math.abs(aPos.y - bPos.y) < (this.size.y + other.size.y) / 2
+        );
     }
 }
 

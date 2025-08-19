@@ -9,35 +9,56 @@ import { GameObject, Sprite, HitBox} from './GameUtils'
 class Ball extends GameObject{
     image: HTMLImageElement;
 
-    constructor(startingPosition: Point2D, ctx: CanvasRenderingContext2D) {
-        super(startingPosition, ctx);
+    constructor(startingPosition: Point2D, parent: PongGame) {
+        super(startingPosition, parent);
         this.size = new Vector2D(35, 35); // Example size, adjust as needed
         this.sprite = new Sprite("f3.png", new Vector2D(60, 60));
 
-        this.hitbox = new HitBox(this.sprite.size);
+        this.hitbox = new HitBox(this, this.sprite.size);
+        this.name = "ball";
+
+        this.onCollide = (other) => {
+            console.log(`${this.name} collides with ${other.name}`);
+            return true;
+        };
     }
+    
 }
 
 class Padel extends GameObject {
     isMoving: boolean;
+    moveUpKey: string = "ArrowUp";
+    moveDownKey: string = "ArrowDown";
+    
+    constructor(
+            startingPosition: Point2D, 
+            parent: PongGame,
+            moveDownKey: string = "ArrowDown",
+            moveUpKey: string = "ArrowUp"
+        ) {
+            
+        super(startingPosition, parent);
+        this.name = "padel";
 
-    constructor(startingPosition: Point2D, ctx: CanvasRenderingContext2D) {
-        super(startingPosition, ctx);
+        this.moveDownKey = moveDownKey;
+        this.moveUpKey = moveUpKey;
+
         this.sprite = new Sprite("BloxyCola.png", new Vector2D(60, 60));
-        this.hitbox = new HitBox();
+        this.hitbox = new HitBox(this);
+        
         window.addEventListener("keydown", (event) => {
-            if (event.key === "ArrowUp") {
+            if (event.key === this.moveUpKey) {
                 this.acceleration.y = -0.5;
                 this.isMoving = true;
             }
-            if (event.key === "ArrowDown") {
+            if (event.key === this.moveDownKey) {
                 this.acceleration.y = 0.5;
                 this.isMoving = true;
             }
         });
 
         window.addEventListener("keyup", (event) => {
-            if (event.key === "ArrowUp" || event.key === "ArrowDown"){
+            if (event.key === this.moveUpKey || event.key === this.moveDownKey){
                 this.acceleration.y = 0;
                 this.isMoving = false;
             } 
@@ -46,12 +67,13 @@ class Padel extends GameObject {
 }
 
 
-class PongGame {
+export class PongGame {
     canvas: HTMLCanvasElement;
     ctx: CanvasRenderingContext2D;
     gameObjects: GameObject[] = [];
     player1: Padel;
     player2: Padel;
+    ball: Ball;
 
     drawCircle(
         pos: Point2D, 
@@ -76,10 +98,6 @@ class PongGame {
         this.ctx.fillRect(x, y, size.x, size.y);
     }
 
-
-
-
-
     
     renderFrame() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -94,15 +112,17 @@ class PongGame {
     loop = () => {
         this.renderFrame();
         requestAnimationFrame(this.loop);
+
         for (const obj of this.gameObjects) {
             obj.update();
-            // obj.acceleration.add(new Vector2D(0.01,0.01));
         }
     }
+
 
     addObject(object: GameObject) {
         this.gameObjects.push(object);
     }
+
 
     constructor(canvas: HTMLCanvasElement) {
         this.canvas = canvas;
@@ -113,11 +133,13 @@ class PongGame {
         }
         this.ctx = ctx;
 
-        this.player1 = new Padel(new Point2D(100, 100), ctx);
-        this.addObject(new Ball(new Point2D(100, 100), ctx));
-        this.addObject(this.player1);
-        
+        this.player1 = new Padel(new Point2D(100, 100), this);
+        this.player2 = new Padel(new Point2D(100, 0), this, "s", "w");
+        this.ball = new Ball(new Point2D(100, 100), this);
 
+        this.addObject(this.ball);
+        this.addObject(this.player1);
+        this.addObject(this.player2);
 
         this.loop();
     }

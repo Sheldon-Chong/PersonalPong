@@ -18,21 +18,23 @@ function drawRotatedImage(
 }
 
 export class GameObject {
+    name: string;
+    game: PongGame
+
+    parent: GameObject | null;
+    children: GameObject[] = [];
+
     position: Point2D;
     velocity: Vector2D = new Vector2D(0, 0);
     acceleration: Vector2D = new Vector2D(0, 0);
     maximumVelocity: Vector2D = new Vector2D(5,5);
-    name: string;
 
     size: Vector2D;
-    sprite: Sprite;
-    hitbox: HitBox | null;
-    ctx: CanvasRenderingContext2D;
     
-    parent: GameObject | null;
-    children: GameObject[] = [];
+    sprite?: Sprite;
+    hitbox?: HitBox | null;
 
-    game: PongGame
+    protected ctx: CanvasRenderingContext2D;
 
     collisions: GameObject[] = [];
 
@@ -52,9 +54,10 @@ export class GameObject {
     }
 
     Draw() {
+        if (this.sprite === undefined)
+            return; 
         const x = this.position.x - this.sprite.size.x / 2;
         const y = this.position.y - this.sprite.size.y / 2;
-        // this.ctx.drawImage(this.sprite.image, x, y, this.sprite.size.x, this.sprite.size.y);
         drawRotatedImage(this.ctx, this.sprite.image, x, y, this.sprite.size.x, this.sprite.size.y, this.sprite.rotation);
     }
 
@@ -71,7 +74,6 @@ export class GameObject {
     getWorldPosition(): Point2D {
         if (!this.parent) return this.position;
         const parentPos = this.parent.getWorldPosition();
-        // Add rotation/scale logic as needed
         return new Point2D(parentPos.x + this.position.x, parentPos.y + this.position.y);
     }
 
@@ -96,21 +98,24 @@ export class GameObject {
 
 
         this.collisions = [];
-        for (const obj of this.game.gameObjects) {
-            if (
-                obj !== this &&
-                this.hitbox !== null &&
-                obj.hitbox !== null &&
-                this.hitbox.isCollidingWith(obj.hitbox)
-            ) {
-                this.collisions.push(obj);
-                if (this.onCollide) {
-                    this.onCollide(obj);
+        if (this.hitbox !== undefined) {
+            for (const obj of this.game.gameObjects) {
+                if (
+                    obj !== this &&
+                    this.hitbox !== null &&
+                    obj.hitbox !== undefined &&
+                    obj.hitbox !== null &&
+                    this.hitbox.isCollidingWith(obj.hitbox)
+                ) {
+                    this.collisions.push(obj);
+                    if (this.onCollide) {
+                        this.onCollide(obj);
+                    }
                 }
             }
+            if (this.onUpdate)
+                this.onUpdate();
         }
-        if (this.onUpdate)
-            this.onUpdate();
     }
 }
 

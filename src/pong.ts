@@ -1,57 +1,6 @@
 
 import { Point2D, Vector2D } from './Coordinates'
-
-class GameObject {
-    position: Point2D;
-    size: Vector2D;
-    sprite: Sprite;
-    hitbox: HitBox;
-    ctx: CanvasRenderingContext2D;
-
-    constructor(startingPosition: Point2D, ctx: CanvasRenderingContext2D) {
-        this.position = startingPosition;
-        this.ctx = ctx;
-    }
-
-    Draw() {
-        const x = this.position.x - this.sprite.size.x / 2;
-        const y = this.position.y - this.sprite.size.y / 2;
-        this.ctx.drawImage(this.sprite.image, x, y, this.sprite.size.x, this.sprite.size.y);
-    }
-
-    previewHitbox() {
-        if (!this.hitbox || !this.hitbox.size) return;
-        const x = this.position.x - this.hitbox.size.x / 2;
-        const y = this.position.y - this.hitbox.size.y / 2;
-        this.ctx.save();
-        this.ctx.strokeStyle = "blue";
-        this.ctx.strokeRect(x, y, this.hitbox.size.x, this.hitbox.size.y);
-        this.ctx.restore();
-    }
-}
-
-class Sprite {
-    image: HTMLImageElement;
-    size: Vector2D;
-
-    constructor(imagePath: string, size: Vector2D | null = null) {
-        this.image = new Image();
-        this.image.src = imagePath;
-        if (size == null)
-            this.size = new Vector2D(this.image.width, this.image.height);
-        else
-            this.size = size;
-    }
-}
-
-class HitBox{
-    size: Vector2D;
-    constructor(size: Vector2D = new Vector2D(30,50)) {
-        this.size = size;
-    }
-}
-
-
+import { GameObject, Sprite, HitBox} from './GameUtils'
 
 
 
@@ -65,14 +14,34 @@ class Ball extends GameObject{
         this.size = new Vector2D(35, 35); // Example size, adjust as needed
         this.sprite = new Sprite("f3.png", new Vector2D(60, 60));
 
-        this.hitbox = new HitBox();
+        this.hitbox = new HitBox(this.sprite.size);
     }
 }
 
 class Padel extends GameObject {
+    isMoving: boolean;
+
     constructor(startingPosition: Point2D, ctx: CanvasRenderingContext2D) {
         super(startingPosition, ctx);
         this.sprite = new Sprite("BloxyCola.png", new Vector2D(60, 60));
+        this.hitbox = new HitBox();
+        window.addEventListener("keydown", (event) => {
+            if (event.key === "ArrowUp") {
+                this.acceleration.y = -0.5;
+                this.isMoving = true;
+            }
+            if (event.key === "ArrowDown") {
+                this.acceleration.y = 0.5;
+                this.isMoving = true;
+            }
+        });
+
+        window.addEventListener("keyup", (event) => {
+            if (event.key === "ArrowUp" || event.key === "ArrowDown"){
+                this.acceleration.y = 0;
+                this.isMoving = false;
+            } 
+        });
     }
 }
 
@@ -81,6 +50,8 @@ class PongGame {
     canvas: HTMLCanvasElement;
     ctx: CanvasRenderingContext2D;
     gameObjects: GameObject[] = [];
+    player1: Padel;
+    player2: Padel;
 
     drawCircle(
         pos: Point2D, 
@@ -105,11 +76,14 @@ class PongGame {
         this.ctx.fillRect(x, y, size.x, size.y);
     }
 
-    render() {
-        // Clear canvas
+
+
+
+
+    
+    renderFrame() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // Draw all game objects
         for (const obj of this.gameObjects) {
             obj.Draw();
             if (obj.previewHitbox) obj.previewHitbox();
@@ -118,14 +92,16 @@ class PongGame {
 
 
     loop = () => {
-        this.render();
+        this.renderFrame();
         requestAnimationFrame(this.loop);
-        // Example: move all balls
         for (const obj of this.gameObjects) {
-            if (obj instanceof Ball) {
-                obj.position.add(new Vector2D(1, 1));
-            }
+            obj.update();
+            // obj.acceleration.add(new Vector2D(0.01,0.01));
         }
+    }
+
+    addObject(object: GameObject) {
+        this.gameObjects.push(object);
     }
 
     constructor(canvas: HTMLCanvasElement) {
@@ -137,9 +113,11 @@ class PongGame {
         }
         this.ctx = ctx;
 
-        // Create initial ball and add to gameObjects
-        const ball = new Ball(new Point2D(100, 100), ctx);
-        this.gameObjects.push(ball);
+        this.player1 = new Padel(new Point2D(100, 100), ctx);
+        this.addObject(new Ball(new Point2D(100, 100), ctx));
+        this.addObject(this.player1);
+        
+
 
         this.loop();
     }

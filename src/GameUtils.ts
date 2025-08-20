@@ -2,22 +2,12 @@ import { Point2D, Vector2D } from './Coordinates'
 import type { PongGame } from './pong';
 
 export class Glow {
-    shadowColor: string;
-    shadowBlur: number;
-    shadowOffsetX: number;
-    shadowOffsetY: number;
-
     constructor(
-        shadowColor: string = "red",
-        shadowBlur: number = 20,
-        shadowOffsetX: number = 0,
-        shadowOffsetY: number = 0
-    ) {
-        this.shadowColor = shadowColor;
-        this.shadowBlur = shadowBlur;
-        this.shadowOffsetX = shadowOffsetX;
-        this.shadowOffsetY = shadowOffsetY;
-    }
+        public shadowColor: string = "red",
+        public shadowBlur: number = 20,
+        public shadowOffsetX: number = 0,
+        public shadowOffsetY: number = 0
+    ) {}
 }
 
 export function drawImg(
@@ -27,62 +17,57 @@ export function drawImg(
     size: Vector2D,
     angle: number, // in radians
     glow: Glow = new Glow(),
+    // projection: number = 4
 ) {
     ctx.save();
     ctx.translate(pos.x + size.x / 2, pos.y + size.y / 2); // Move to center of image
     ctx.rotate(angle);
     ctx.globalCompositeOperation = "lighter";
-    ctx.shadowColor = glow.shadowColor;      // Glow color
+    ctx.shadowColor = glow.shadowColor; // Glow color
     ctx.shadowBlur = glow.shadowBlur;           // Glow strength
     ctx.shadowOffsetX = glow.shadowOffsetX;
     ctx.shadowOffsetY = glow.shadowOffsetY;
         if (sprite.flippedHorizontal) 
             ctx.scale(-1, 1); // Flip horizontally
     ctx.drawImage(sprite.image, -size.x / 2, -size.y / 2, size.x, size.y); // Draw centered
+
+    // for (let i = 0; i < projection; i++) {
+    //     console.log("sjidoads");
+    //     ctx.drawImage(sprite.image, -size.x / 2, (-size.y / 2) - (i* 10), size.x, size.y); // Draw centered
+    // }
     ctx.restore();
     
 }
 
 export class GameObject {
-    name: string;
-    game: PongGame
-
-    parent: GameObject | null;
+    collisions: GameObject[] = [];
     children: GameObject[] = [];
 
-    position: Point2D;
-    velocity: Vector2D = new Vector2D(0, 0);
-    acceleration: Vector2D = new Vector2D(0, 0);
-    maximumVelocity: Vector2D = new Vector2D(5,5);
+    constructor(
+        public position: Point2D,
+        public game: PongGame,
+        public parent: GameObject | null = null,
+        public name: string = "",
+        public velocity: Vector2D = new Vector2D(0, 0),
+        public acceleration: Vector2D = new Vector2D(0, 0),
+        public maximumVelocity: Vector2D = new Vector2D(5, 5),
+        public size: Vector2D = new Vector2D(0, 0),
+        public sprite?: Sprite,
+        public hitbox?: HitBox | null,
+        protected ctx: CanvasRenderingContext2D = game.ctx,
+        public onCollide?: (other: GameObject) => boolean,
+        public onUpdate?: () => boolean
+    ) {}
 
-    size: Vector2D;
-    
-    sprite?: Sprite;
-    hitbox?: HitBox | null;
-
-    protected ctx: CanvasRenderingContext2D;
-
-    collisions: GameObject[] = [];
-
-    onCollide?: (other: GameObject) => boolean;
-    onUpdate?: () => boolean;
-
-    constructor(startingPosition: Point2D, game: PongGame, parent=null) {
-        this.position = startingPosition;
-        this.game = game;
-        this.ctx = game.ctx;
-        this.parent = parent;
-    }
-
-    addChild(object:GameObject) {
+    addChild(object: GameObject) {
         this.children.push(object);
         object.parent = this;
     }
 
     Draw() {
         if (this.sprite === undefined)
-            return; 
-        const pos = this.getWorldPosition().subtract(this.sprite.size.divide(new Vector2D(2,2)));
+            return;
+        const pos = this.getWorldPosition().subtract(this.sprite.size.divide(new Vector2D(2, 2)));
         drawImg(this.ctx, this.sprite, pos, this.sprite.size, this.sprite.rotation, this.sprite.glow);
     }
 
@@ -99,13 +84,13 @@ export class GameObject {
     getWorldPosition(): Point2D {
         if (!this.parent) {
             return new Point2D(
-                this.position.x - this.game.camera.position.x, 
+                this.position.x - this.game.camera.position.x,
                 this.position.y - this.game.camera.position.y
             );
         }
         const parentPos = this.parent.getWorldPosition();
         return new Point2D(
-            parentPos.x + this.position.x, 
+            parentPos.x + this.position.x,
             parentPos.y + this.position.y
         );
     }
@@ -129,8 +114,6 @@ export class GameObject {
         this.position.x += this.velocity.x;
         this.position.y += this.velocity.y;
 
-        
-
         this.collisions = [];
         if (this.hitbox !== undefined) {
             for (const obj of this.game.gameObjects) {
@@ -150,27 +133,33 @@ export class GameObject {
         }
         if (this.onUpdate !== undefined) {
             this.onUpdate();
-            if (this.name === "camera") {
-                console.log("camera");
-            }
         }
     }
 }
 
 export class Sprite {
-    image: HTMLImageElement;
-    size: Vector2D;
     rotation: number = 0;
     glow: Glow = new Glow();
-    flippedHorizontal: boolean = false;
 
-    constructor(imagePath: string, size: Vector2D | null = null) {
+    image: HTMLImageElement;
+
+    constructor(
+        imagePath: string | null,
+        public size: Vector2D = new Vector2D(0, 0),
+        public flippedHorizontal: boolean = false
+    ) {
         this.image = new Image();
-        this.image.src = imagePath;
-        if (size == null)
+        
+        if (imagePath) {
+            this.image.src = imagePath;
+        }
+        else {
+            
+        }
+        
+        if (size.x === 0 && size.y === 0) {
             this.size = new Vector2D(this.image.width, this.image.height);
-        else
-            this.size = size;
+        }
     }
 }
 

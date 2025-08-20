@@ -10,34 +10,7 @@ export class Glow {
     ) {}
 }
 
-export function drawImg(
-    ctx: CanvasRenderingContext2D,
-    sprite: Sprite,
-    pos: Point2D,
-    size: Vector2D,
-    angle: number, // in radians
-    glow: Glow = new Glow(),
-    // projection: number = 4
-) {
-    ctx.save();
-    ctx.translate(pos.x + size.x / 2, pos.y + size.y / 2); // Move to center of image
-    ctx.rotate(angle);
-    ctx.globalCompositeOperation = "lighter";
-    ctx.shadowColor = glow.shadowColor; // Glow color
-    ctx.shadowBlur = glow.shadowBlur;           // Glow strength
-    ctx.shadowOffsetX = glow.shadowOffsetX;
-    ctx.shadowOffsetY = glow.shadowOffsetY;
-        if (sprite.flippedHorizontal) 
-            ctx.scale(-1, 1); // Flip horizontally
-    ctx.drawImage(sprite.image, -size.x / 2, -size.y / 2, size.x, size.y); // Draw centered
 
-    // for (let i = 0; i < projection; i++) {
-    //     console.log("sjidoads");
-    //     ctx.drawImage(sprite.image, -size.x / 2, (-size.y / 2) - (i* 10), size.x, size.y); // Draw centered
-    // }
-    ctx.restore();
-    
-}
 
 export class GameObject {
     collisions: GameObject[] = [];
@@ -68,7 +41,7 @@ export class GameObject {
         if (this.sprite === undefined)
             return;
         const pos = this.getWorldPosition().subtract(this.sprite.size.divide(new Vector2D(2, 2)));
-        drawImg(this.ctx, this.sprite, pos, this.sprite.size, this.sprite.rotation, this.sprite.glow);
+        this.sprite!.drawImg(this.ctx, pos, this.sprite.size, this.sprite.rotation);
     }
 
     previewHitbox() {
@@ -137,9 +110,24 @@ export class GameObject {
     }
 }
 
+export function createColoredImage(color: string, size: Vector2D): HTMLImageElement {
+    const canvas = document.createElement('canvas');
+    canvas.width = size.x;
+    canvas.height = size.y;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+        ctx.fillStyle = color;
+        ctx.fillRect(0, 0, size.x, size.y);
+    }
+    const img = new Image();
+    img.src = canvas.toDataURL();
+    return img;
+}
+
 export class Sprite {
     rotation: number = 0;
-    glow: Glow = new Glow();
+    glow: Glow| null = new Glow();
+    blendMode: GlobalCompositeOperation = "source-over";
 
     image: HTMLImageElement;
 
@@ -148,18 +136,71 @@ export class Sprite {
         public size: Vector2D = new Vector2D(0, 0),
         public flippedHorizontal: boolean = false
     ) {
+        // Create a circular cropped image
+        const diameter = Math.max(size.x, size.y);
+        const canvas = document.createElement('canvas');
+        canvas.width = diameter;
+        canvas.height = diameter;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(diameter / 2, diameter / 2, diameter / 2, 0, Math.PI * 2);
+            ctx.closePath();
+            ctx.clip();
+            let img = new Image();
+            if (imagePath) {
+                img.src = imagePath;
+            } else {
+                img.src = createColoredImage("#ffffff", size).src;
+            }
+            // Draw image after it loads
+            img.onload = () => {
+                ctx.drawImage(img, 0, 0, diameter, diameter);
+                this.image.src = canvas.toDataURL();
+            };
+        }
         this.image = new Image();
-        
-        if (imagePath) {
-            this.image.src = imagePath;
-        }
-        else {
-            
-        }
-        
+        // Set a placeholder until loaded
+        this.image.src = canvas.toDataURL();
         if (size.x === 0 && size.y === 0) {
             this.size = new Vector2D(this.image.width, this.image.height);
         }
+    }
+
+    drawImg(
+        ctx: CanvasRenderingContext2D,
+        pos: Point2D,
+        size: Vector2D,
+        angle: number, // in radians
+        glow: Glow = new Glow(),
+        // projection: number = 4
+    ) {
+        ctx.save();
+        ctx.translate(pos.x + size.x / 2, pos.y + size.y / 2); // Move to center of image
+        ctx.rotate(angle);
+        ctx.globalCompositeOperation = this.blendMode;
+        if (this.glow) {
+            ctx.shadowColor = this.glow.shadowColor; // Glow color
+            ctx.shadowBlur = this.glow.shadowBlur;           // Glow strength
+            ctx.shadowOffsetX = this.glow.shadowOffsetX;
+            ctx.shadowOffsetY = this.glow.shadowOffsetY;
+        }
+        if (this.flippedHorizontal) 
+            ctx.scale(-1, 1); // Flip horizontally
+        // ctx.beginPath();
+        // let radius = 100;
+        // ctx.arc(pos.x + size.x / 2, pos.y + size.y / 2, size.x / 2, 0, Math.PI * 2); // Centered circle
+        // ctx.closePath();
+        // ctx.clip();
+        ctx.drawImage(this.image, -size.x / 2, -size.y / 2, size.x, size.y); // Draw centered
+
+        // for (let i = 0; i < projection; i++) {
+        //     console.log("sjidoads");
+        //     ctx.drawImage(sprite.image, -size.x / 2, (-size.y / 2) - (i* 10), size.x, size.y); // Draw centered
+        // }
+        ctx.restore();
+        
     }
 }
 

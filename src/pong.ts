@@ -1,9 +1,14 @@
 
-import { Point2D, Vector2D } from './Coordinates'
-import { GameObject, Sprite, HitBox, Glow, drawImg} from './GameUtils'
+import { Point2D, Vector2D, interpolate } from './Coordinates'
+import { GameObject, Sprite, HitBox, Glow} from './GameUtils'
+import { Camera } from './objects/Camera'
+import { Label } from './objects/Label'
 
-function interpolate(pos: Point2D, pos2: Point2D, slowness: number):Point2D {
-    return new Point2D(pos.x + (pos2.x - pos.x) / slowness, pos.y + (pos2.y - pos.y) / slowness);
+class GameSettings {
+    playerAcceleration: number = 1;
+    playerCount: number = 6;
+    maxPlayerCount: number = 6;
+    ballSpeed: number = 60;
 }
 
 enum Team {
@@ -11,78 +16,18 @@ enum Team {
     TEAM2= "team2"
 }
 
-class Camera extends GameObject {
-    shakeValue: Vector2D = new Vector2D(100,100);
-    target: Point2D = new Point2D(0,0);
-    rawPosition: Point2D;
-
-    constructor (startingPos: Point2D, game: PongGame) {
-        super(startingPos, game);
-        this.name = "camera";
-        this.rawPosition = startingPos;
-        this.position = startingPos;
-        
-        this.onUpdate = () => {
-            this.rawPosition = interpolate(this.rawPosition, this.target, 100);
-            this.position = this.rawPosition.add(new Vector2D(randomBetween(-this.shakeValue.x,this.shakeValue.x), randomBetween(-this.shakeValue.y,this.shakeValue.y)));
-            this.shakeValue = this.shakeValue.divide(new Vector2D(1.1, 1.1));
-
-            if (this.game.ball.lastHit === Team.TEAM1) 
-                this.target = new Point2D(300, 0);
-            
-            if (this.game.ball.lastHit === Team.TEAM2) 
-                this.target = new Point2D(-300, 0);
-
-            return true;
-        }
-    }
-}
-
-class TextObject extends GameObject {
-    text: string;
-    font: string;
-    color: string;
+class GameTeam {
+    score: number = 0;
+    players: Padel[] = [];
+    scoreUI: Label;
 
     constructor(
-        text: string,
-        position: Point2D,
-        game: PongGame,
-        font: string = "20px Arial",
-        color: string = "black",
+        public game: PongGame,
+        public name: String,
     ) {
-        super(position, game);
-        this.text = text;
-        this.font = font;
-        this.color = color;
-        this.hitbox = null;
-        this.name = "string";
-    }
 
-    Draw() {
-        this.ctx.font = this.font;
-        this.ctx.fillStyle = this.color;
-        const textWidth = this.ctx.measureText(this.text).width;
-        const metrics = this.ctx.measureText(this.text);
-        const textHeight = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
-        const x = this.getWorldPosition().x - textWidth / 2;
-        const y = this.getWorldPosition().y + textHeight / 2;
-        this.ctx.fillText(this.text, x, y);
     }
 }
-
-
-
-function randomBetween(min: number, max: number): number {
-    return Math.random() * (max - min) + min;
-}
-
-class GameSettings {
-    playerAcceleration: number = 0.4;
-    playerCount: number = 6;
-    ballSpeed: number = 60;
-}
-
-
 
 class Ball extends GameObject {
     rotationAcceleration: number = 0;
@@ -93,6 +38,35 @@ class Ball extends GameObject {
 
     hitbox: HitBox;
     sprite: Sprite;
+
+    onHitGoal(team: string) {
+        const center =  new Point2D(this.game.canvasSize.x,this.game.canvasSize.y).divide(new Vector2D(2,2));
+        this.position = center;
+        this.game.camera.rawPosition = new Point2D(0,0);
+        this.game.camera.shakeValue = new Vector2D(30,30);
+        
+        if (team === Team.TEAM1) {
+            this.velocity.x = 60;
+            this.game.team2.score++;
+        }
+        if (team === Team.TEAM2) {
+            this.velocity.x = -60;
+            this.game.team1.score++;
+        }
+    }
+
+    calculateAngle(other: Padel) {
+        const paddleCenterY = other.position.y + other.hitbox!.size.y / 2;
+        const ballCenterY = this.position.y + this.hitbox.size.y / 2;
+        const relativeIntersectY = (ballCenterY - paddleCenterY);
+        const normalizedIntersectY = relativeIntersectY / (this.game.canvasSize.y / 2);
+        const bounceAngle = normalizedIntersectY * Ball.MAX_BOUNCE_ANGLE;
+        const direction = other.team === Team.TEAM2 ? -1 : 1;
+        this.velocity.x = this.game.gameSettings.ballSpeed * Math.cos(bounceAngle) * direction;
+        this.velocity.y = this.game.gameSettings.ballSpeed * Math.sin(bounceAngle);
+        this.rotationVelocity = 0.4;
+
+    }
 
     constructor(
         startingPosition: Point2D,
@@ -107,23 +81,18 @@ class Ball extends GameObject {
 
         this.onCollide = (other) => {
             if (other instanceof Padel) {
-                const paddleCenterY = other.position.y + other.hitbox!.size.y / 2;
-                const ballCenterY = this.position.y + this.hitbox.size.y / 2;
-                const relativeIntersectY = (ballCenterY - paddleCenterY);
-                const normalizedIntersectY = relativeIntersectY / (this.game.canvasSize.y / 2);
-                const bounceAngle = normalizedIntersectY * Ball.MAX_BOUNCE_ANGLE;
-                const direction = other.team === Team.TEAM2 ? -1 : 1;
-                if (other.team === Team.TEAM1 && this.lastHit !== other.team) {
-                    this.game.team1Score++;
-                }
-                if (other.team === Team.TEAM2 && this.lastHit !== other.team) {
-                    this.game.team2Score++;
-                }
+                this.calculateAngle(other);
+
+                if (other.team === Team.TEAM1 && this.lastHit !== other.team) 
+                    this.game.camera.target = new Point2D(300, 0);
+                if (other.team === Team.TEAM2 && this.lastHit !== other.team) 
+                    this.game.camera.target = new Point2D(-300, 0);
                 this.lastHit = other.team;
                 this.collided = true;
-                this.velocity.x = this.game.gameSettings.ballSpeed * Math.cos(bounceAngle) * direction;
-                this.velocity.y = this.game.gameSettings.ballSpeed * Math.sin(bounceAngle);
-                this.rotationVelocity = 0.4;
+            }
+
+            else if (other instanceof Goal) {
+                this.onHitGoal(other.team);
             }
             return true;
         };
@@ -164,10 +133,18 @@ class Arrow extends GameObject{
             this.sprite.flippedHorizontal = true;
         }
 
-        drawImg(this.ctx, this.sprite, 
+        this.sprite.drawImg(this.ctx, 
             new Point2D(x, this.position.y - this.game.camera.position.y + this.parent.position.y), 
             this.sprite.size, 0
         );
+    }
+}
+
+class ProfileImage extends GameObject {
+    constructor(public game: PongGame) {
+        super(new Point2D(0,-70), game);
+        this.sprite = new Sprite("assets/example.webp", new Vector2D(30,30));
+        this.sprite.glow = null;
     }
 }
 
@@ -187,8 +164,11 @@ class Padel extends GameObject {
     ) {
         super(position, game);
 
-        let label = new TextObject(this.name, new Point2D(0, -40), game, "20px Arial", "#ffffff");
+        let label = new Label(this.name, new Point2D(0, -50), game, "15px Arial", "#ffffff");
         this.addChild(label);
+
+        const profileImage = new ProfileImage(this.game);
+        this.addChild(profileImage);
 
         this.maximumVelocity = new Vector2D(
             this.game.gameSettings.playerAcceleration * 10, 
@@ -196,6 +176,7 @@ class Padel extends GameObject {
         );
 
         this.sprite = new Sprite("assets/ghost2.webp", new Vector2D(60, 60));
+        this.sprite.blendMode = "lighter";
         this.hitbox = new HitBox(this);
 
         if (this.team === Team.TEAM1) {
@@ -230,8 +211,16 @@ class Padel extends GameObject {
 }
 
 class Goal extends GameObject {
-    constructor(game: PongGame, team: string) {
-        super(new Point2D(0,0), game);
+    constructor(game: PongGame, public team: string) {
+        if (team === Team.TEAM1) {
+            super(new Point2D(-190,game.canvasSize.y/2), game);
+            this.sprite = new Sprite(null,new Vector2D(100,game.canvasSize.y + 50));
+        }
+        else {
+            super(new Point2D(game.canvasSize.x + 190,game.canvasSize.y/2), game);
+            this.sprite = new Sprite(null,new Vector2D(100,game.canvasSize.y + 50));
+        }
+        this.hitbox = new HitBox(this, new Vector2D(20, 1000));
     }
 }
 
@@ -245,30 +234,24 @@ class Player {
     }
 }
 
+
+
+
 export class PongGame {
     canvas: HTMLCanvasElement;
     ctx: CanvasRenderingContext2D;
     canvasSize: Vector2D;
 
     gameObjects: GameObject[] = [];
-    player1: Padel;
-    player2: Padel;
 
-    team1Players: Padel[] = [];
-    team2Players: Padel[] = [];
     ball: Ball;
-    
-    scoreLeftUI: TextObject;
-    scoreRightUI: TextObject;
-
-    team1Score: number = 0;
-    team2Score: number = 0;
-
     camera: Camera = new Camera(new Point2D(0,-100), this);
-
     gameSettings: GameSettings = new GameSettings();
 
     
+    team1: GameTeam = new GameTeam(this, Team.TEAM1);
+    team2: GameTeam = new GameTeam(this, Team.TEAM2);
+
     renderFrame() {
         this.ctx.fillStyle = "#2B304B";
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
@@ -286,9 +269,8 @@ export class PongGame {
         }
         this.renderFrame();
         requestAnimationFrame(this.loop);
-        this.scoreLeftUI.text = String(this.team1Score);
-        this.scoreRightUI.text = String(this.team2Score);
-
+        this.team1.scoreUI.text = String(this.team1.score);
+        this.team2.scoreUI.text = String(this.team2.score);
     }
 
 
@@ -303,7 +285,7 @@ export class PongGame {
 
 
     constructor(canvas: HTMLCanvasElement) {
-        this.camera = new Camera(new Point2D(0,-100), this);
+        this.camera = new Camera(new Point2D(0,0), this);
         this.canvas = canvas;
         this.canvasSize = new Vector2D(800, 400); // Set desired canvas size here
         this.canvas.width = this.canvasSize.x;
@@ -318,58 +300,55 @@ export class PongGame {
             new Player("hallo!!!"),
             new Player("hallo!!!"),
             new Player("hallo!!!"),
-            new Player("hallo!!!"),
             // new Player("test"),
         ];
 
-        let ctx = this.canvas.getContext('2d');
-        if (!ctx) {
-            console.error("Canvas 2D context not available");
-            return;
-        }
+        const ctx = this.canvas.getContext('2d')!;
         this.ctx = ctx;
-        if (this.gameSettings.playerCount % 2 !== 0) {
-            
-        }
+        if (players.length % 2 !== 0)  throw new Error ("Only even number of players allowed");
+        if (players.length > this.gameSettings.maxPlayerCount)  throw new Error ("Only even number of players allowed");
+        
         
         for (let i = 0; i < players.length; i ++) {
-            if (i % 2 === 0) {
-                this.team2Players.push(new Padel(new Point2D(0 - (i * 50)  + 100,canvas.height/2), this, players[i].name, Team.TEAM1, "s", "w"));
-            } else {
-                this.team1Players.push(new Padel(new Point2D(canvas.width + ((i - 1) * 50) - 100, canvas.height/2), this, players[i].name, Team.TEAM2));
-            }
+            if (i % 2 === 0) 
+                this.team2.players.push(new Padel(new Point2D(0 - (i * 50)  + 100,canvas.height/2), this, players[i].name, Team.TEAM1, "s", "w"));
+            else 
+                this.team1.players.push(new Padel(new Point2D(canvas.width + ((i - 1) * 50) - 100, canvas.height/2), this, players[i].name, Team.TEAM2));
         }
+
+        this.ball = new Ball(new Point2D(100, 100), this);
+        this.ball.velocity.x = 5;
+
+        // INITIALIZE TEAMS AND SCORES
+
+        this.team1.scoreUI = new Label("none", new Point2D(100,canvas.height/2), this, "bold 100px Arial" , "#4C568C");
+        this.team2.scoreUI = new Label("none", new Point2D(canvas.width - 100,canvas.height/2), this, "bold 100px Arial" , "#4C568C");
+
+        this.addGameObject(this.team1.scoreUI);
+        this.addGameObject(this.team2.scoreUI);
+
+        this.addObject(this.camera);
+        this.addObject(this.ball);
+
+        // Add all paddles from both teams
+        for (const padel of this.team1.players) this.addObject(padel);
+        for (const padel of this.team2.players) this.addObject(padel);
+
+
+        this.addObject(new Goal(this, Team.TEAM1));
+        this.addObject(new Goal(this, Team.TEAM2));
+
+        this.loop();
+
+                // Add TextObjects for player names above paddles
+        // this.addObject(new TextObject("Player 1", new Point2D(100, 100), this));
+        // this.addObject(new TextObject("Player 2", new Point2D(100, 100), this));
 
         // this.team2Players.push(new Padel(new Point2D(100,canvas.height/2), this, Team.Player1, "s", "w"));
         // this.team2Players.push(new Padel(new Point2D(0,canvas.height/2), this, Team.Player1, "f", "r"));
         // this.team1Players.push(new Padel(new Point2D(canvas.width - 100, canvas.height/2), this, Team.Player2));
         // this.team1Players.push(new Padel(new Point2D(canvas.width - 0, canvas.height/2), this, Team.Player2, "k", "i"));
 
-        this.ball = new Ball(new Point2D(100, 100), this);
-        this.ball.velocity.x = 5;
-
-        this.scoreLeftUI = new TextObject("10", new Point2D(100,canvas.height/2), this, "bold 100px Arial" , "#4C568C");
-        this.scoreRightUI = new TextObject("10", new Point2D(canvas.width - 100,canvas.height/2), this, "bold 100px Arial" , "#4C568C");
-
-        this.addGameObject(this.scoreLeftUI);
-        this.addGameObject(this.scoreRightUI);
-        this.addObject(this.camera);
-
-        this.addObject(this.ball);
-
-        // Add all paddles from both teams
-        for (const padel of this.team1Players) {
-            this.addObject(padel);
-        }
-        for (const padel of this.team2Players) {
-            this.addObject(padel);
-        }
-
-        // Add TextObjects for player names above paddles
-        // this.addObject(new TextObject("Player 1", new Point2D(100, 100), this));
-        // this.addObject(new TextObject("Player 2", new Point2D(100, 100), this));
-
-        this.loop();
     }
 
     // Method to add new game objects

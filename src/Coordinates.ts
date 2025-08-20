@@ -50,3 +50,12 @@ export class Vector2D {
     }
 }
 
+export function interpolate(pos: Point2D, pos2: Point2D, slowness: number):Point2D {
+    return new Point2D(pos.x + (pos2.x - pos.x) / slowness, pos.y + (pos2.y - pos.y) / slowness);
+}
+
+
+export function randomBetween(min: number, max: number): number {
+    return Math.random() * (max - min) + min;
+}
+

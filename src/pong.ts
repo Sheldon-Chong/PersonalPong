@@ -1,6 +1,6 @@
 
 import { Point2D, Vector2D, interpolate } from './Coordinates'
-import { GameObject, Sprite, HitBox, Glow} from './GameUtils'
+import { GameObject, Sprite, HitBox, Glow, createColoredImage, shiftImageHue} from './GameUtils'
 import { Camera } from './objects/Camera'
 import { Label } from './objects/Label'
 
@@ -150,7 +150,7 @@ class ProfileImage extends GameObject {
 
 class Padel extends GameObject {
     isMoving: boolean = false;
-    sprite: Sprite;
+    sprite: Sprite = new Sprite("assets/ghost2.webp", new Vector2D(60, 60));
     hitbox: HitBox;
     maximumVelocity: Vector2D;
 
@@ -174,8 +174,8 @@ class Padel extends GameObject {
             this.game.gameSettings.playerAcceleration * 10, 
             this.game.gameSettings.playerAcceleration * 10
         );
+        this.sprite = player.skin ? player.skin : this.sprite; 
 
-        this.sprite = new Sprite("assets/ghost2.webp", new Vector2D(60, 60));
         this.sprite.blendMode = "lighter";
         this.hitbox = new HitBox(this);
 
@@ -226,11 +226,11 @@ class Goal extends GameObject {
 
 
 class Player {
-    skin: number;
     
     constructor(
             public name: string, 
-            public profileImage: string = "")
+            public profileImage: string = "",
+            public skin: Sprite | null = null)
         {
 
     }
@@ -253,6 +253,8 @@ export class PongGame {
     
     team1: GameTeam = new GameTeam(this, Team.TEAM1);
     team2: GameTeam = new GameTeam(this, Team.TEAM2);
+
+    sprites: Sprite[] = [];
 
     renderFrame() {
         this.ctx.fillStyle = "#2B304B";
@@ -300,21 +302,44 @@ export class PongGame {
     constructor(canvas: HTMLCanvasElement) {
         this.camera = new Camera(new Point2D(0,0), this);
         this.canvas = canvas;
-        this.canvasSize = new Vector2D(800, 400); // Set desired canvas size here
+        this.canvasSize = new Vector2D(1200, 400); // Set desired canvas size here
         this.canvas.width = this.canvasSize.x;
         this.canvas.height = this.canvasSize.y;
         this.canvas.style.border = "4px solid #ffffff";
         this.canvas.style.borderRadius = "20px";
 
+        // for (let i=0; i < 10; i ++) {
+        //     let path = "assets/ghost2.webp";
+        //     let sprite = new Sprite(path, new Vector2D(40,40));
+
+        //     // sprite.image.onload = () => {
+        //         sprite.image = shiftImageHue(sprite.image, 20);
+        //     // }
+        //     // sprite.image.onload = () => {
+        //         this.sprites.push(sprite);
+        //     // }
+
+        // }
+
         let players: Player[] = [
-            new Player("test", "assets/profile1.webp"),
-            new Player("hallo!!!", "assets/profile2.webp"),
-            new Player("hallo!!!"),
-            new Player("hallo!!!"),
-            new Player("hallo!!!"),
-            new Player("hallo!!!"),
+            new Player("player1", "assets/profile1.webp"),
+            new Player("player2", "assets/profile2.webp", this.sprites[4]),
+            new Player("player3"),
+            new Player("player4"),
+            new Player("player5"),
+            new Player("player6"),
             // new Player("test"),
         ];
+
+        let sprite = new Sprite("assets/profile1.webp", new Vector2D(40,40));
+
+        sprite.image.onload = () => {
+            sprite = new Sprite(shiftImageHue(sprite.image, 100), new Vector2D(40,40));
+        }
+        // sprite.image.onload = () => {
+            // this.sprites.push(sprite);
+
+        players[1].skin = sprite;
 
         const ctx = this.canvas.getContext('2d')!;
         this.ctx = ctx;

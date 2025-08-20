@@ -141,9 +141,9 @@ class Arrow extends GameObject{
 }
 
 class ProfileImage extends GameObject {
-    constructor(public game: PongGame) {
+    constructor(public game: PongGame, public profileImage: string = "assets/profile1.webp") {
         super(new Point2D(0,-70), game);
-        this.sprite = new Sprite("assets/example.webp", new Vector2D(30,30));
+        this.sprite = new Sprite(profileImage, new Vector2D(30,30), false, true, true);
         this.sprite.glow = null;
     }
 }
@@ -157,17 +157,17 @@ class Padel extends GameObject {
     constructor(
         public position: Point2D,
         public game: PongGame,
-        public name: string,
         public team: string,
+        public player: Player,
         public moveDownKey: string = "ArrowDown",
         public moveUpKey: string = "ArrowUp"
     ) {
         super(position, game);
 
-        let label = new Label(this.name, new Point2D(0, -50), game, "15px Arial", "#ffffff");
+        let label = new Label(this.player.name, new Point2D(0, -50), game, "15px Arial", "#ffffff");
         this.addChild(label);
 
-        const profileImage = new ProfileImage(this.game);
+        const profileImage = new ProfileImage(this.game, this.player.profileImage);
         this.addChild(profileImage);
 
         this.maximumVelocity = new Vector2D(
@@ -211,7 +211,7 @@ class Padel extends GameObject {
 }
 
 class Goal extends GameObject {
-    constructor(game: PongGame, public team: string) {
+    constructor(game: PongGame, public team) {
         if (team === Team.TEAM1) {
             super(new Point2D(-190,game.canvasSize.y/2), game);
             this.sprite = new Sprite(null,new Vector2D(100,game.canvasSize.y + 50));
@@ -226,11 +226,13 @@ class Goal extends GameObject {
 
 
 class Player {
-    name: string;
     skin: number;
     
-    constructor( name: string) {
-        this.name = name;
+    constructor(
+            public name: string, 
+            public profileImage: string = "")
+        {
+
     }
 }
 
@@ -260,10 +262,15 @@ export class PongGame {
             obj.Draw();
         }
     }
-
+    lastFrameTime: number = performance.now();
+    fps: number = 0;
 
     loop = () => {
-        
+        const now = performance.now();
+        const delta = (now - this.lastFrameTime) / 1000; // seconds
+        this.lastFrameTime = now;
+        this.fps = 1 / delta;
+
         for (const obj of this.gameObjects) {
             obj.update();
         }
@@ -271,6 +278,12 @@ export class PongGame {
         requestAnimationFrame(this.loop);
         this.team1.scoreUI.text = String(this.team1.score);
         this.team2.scoreUI.text = String(this.team2.score);
+
+        
+        // Optionally, display FPS
+        this.ctx.fillStyle = "#fff";
+        this.ctx.font = "16px Arial";
+        this.ctx.fillText(`FPS: ${this.fps.toFixed(1)}`, 10, 20);
     }
 
 
@@ -294,8 +307,8 @@ export class PongGame {
         this.canvas.style.borderRadius = "20px";
 
         let players: Player[] = [
-            new Player("test"),
-            new Player("hallo!!!"),
+            new Player("test", "assets/profile1.webp"),
+            new Player("hallo!!!", "assets/profile2.webp"),
             new Player("hallo!!!"),
             new Player("hallo!!!"),
             new Player("hallo!!!"),
@@ -311,9 +324,9 @@ export class PongGame {
         
         for (let i = 0; i < players.length; i ++) {
             if (i % 2 === 0) 
-                this.team2.players.push(new Padel(new Point2D(0 - (i * 50)  + 100,canvas.height/2), this, players[i].name, Team.TEAM1, "s", "w"));
+                this.team2.players.push(new Padel(new Point2D(0 - (i * 50)  + 100,canvas.height/2), this, Team.TEAM1, players[i], "s", "w"));
             else 
-                this.team1.players.push(new Padel(new Point2D(canvas.width + ((i - 1) * 50) - 100, canvas.height/2), this, players[i].name, Team.TEAM2));
+                this.team1.players.push(new Padel(new Point2D(canvas.width + ((i - 1) * 50) - 100, canvas.height/2), this, Team.TEAM2, players[i]));
         }
 
         this.ball = new Ball(new Point2D(100, 100), this);

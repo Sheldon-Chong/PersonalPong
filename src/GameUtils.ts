@@ -134,7 +134,9 @@ export class Sprite {
     constructor(
         imagePath: string | null,
         public size: Vector2D = new Vector2D(0, 0),
-        public flippedHorizontal: boolean = false
+        public flippedHorizontal: boolean = false,
+        public crop: boolean = false,
+        public outline: boolean = false
     ) {
         // Create a circular cropped image
         const diameter = Math.max(size.x, size.y);
@@ -144,10 +146,12 @@ export class Sprite {
         const ctx = canvas.getContext('2d');
         if (ctx) {
             ctx.save();
-            ctx.beginPath();
-            ctx.arc(diameter / 2, diameter / 2, diameter / 2, 0, Math.PI * 2);
-            ctx.closePath();
-            ctx.clip();
+            if (crop) {
+                ctx.beginPath();
+                ctx.arc(diameter / 2, diameter / 2, diameter / 2, 0, Math.PI * 2);
+                ctx.closePath();
+                ctx.clip();
+            }
             let img = new Image();
             if (imagePath) {
                 img.src = imagePath;
@@ -188,19 +192,20 @@ export class Sprite {
         }
         if (this.flippedHorizontal) 
             ctx.scale(-1, 1); // Flip horizontally
-        // ctx.beginPath();
-        // let radius = 100;
-        // ctx.arc(pos.x + size.x / 2, pos.y + size.y / 2, size.x / 2, 0, Math.PI * 2); // Centered circle
-        // ctx.closePath();
-        // ctx.clip();
+
+        // outline stroke section
+        if (this.outline) {
+            ctx.beginPath();
+            const diameter = Math.max(size.x, size.y);
+            ctx.arc(0, 0, diameter / 2, 0, Math.PI * 2);
+            ctx.strokeStyle = "black"; // You can replace "black" with a variable if needed
+            ctx.lineWidth = 2; // You can replace 2 with a variable if needed
+            ctx.stroke();
+        }
+
         ctx.drawImage(this.image, -size.x / 2, -size.y / 2, size.x, size.y); // Draw centered
 
-        // for (let i = 0; i < projection; i++) {
-        //     console.log("sjidoads");
-        //     ctx.drawImage(sprite.image, -size.x / 2, (-size.y / 2) - (i* 10), size.x, size.y); // Draw centered
-        // }
         ctx.restore();
-        
     }
 }
 

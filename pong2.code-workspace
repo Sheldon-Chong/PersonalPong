@@ -1,0 +1,17 @@
+{
+    "folders": [
+		{
+			"path": "."
+		}
+	],
+    "settings": {
+        "workbench.colorCustomizations": {
+            "folderRegexColor.custom1": "#31e2cd",
+            "folderRegexColor.custom2": "#ff0000",
+            "folderRegexColor.custom3": "#ffc23d",
+            "folderRegexColor.custom4": "#3a393b",
+            "terminal.background": "#00000000",
+            "terminal.ansiRed": "#ff6969"
+        }
+    }
+}

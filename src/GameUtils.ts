@@ -59,10 +59,10 @@ export class Glow {
         public shadowColor: string = "red",
         public shadowBlur: number = 20,
         public shadowOffsetX: number = 0,
-        public shadowOffsetY: number = 0
+        public shadowOffsetY: number = 0,
+        public blendMode: GlobalCompositeOperation = "source-over"
     ) {}
 }
-
 
 
 export class GameObject {
@@ -76,14 +76,16 @@ export class GameObject {
         public name: string = "",
         public velocity: Vector2D = new Vector2D(0, 0),
         public acceleration: Vector2D = new Vector2D(0, 0),
-        public maximumVelocity: Vector2D = new Vector2D(5, 5),
+        public maximumVelocity: Vector2D = new Vector2D(1000, 1000),
         public size: Vector2D = new Vector2D(0, 0),
         public sprite?: Sprite,
         public hitbox?: HitBox | null,
         protected ctx: CanvasRenderingContext2D = game.ctx,
         public onCollide?: (other: GameObject) => boolean,
         public onUpdate?: () => boolean
-    ) {}
+    ) {
+        // Object.assign(this, );
+    }
 
     addChild(object: GameObject) {
         this.children.push(object);
@@ -94,7 +96,8 @@ export class GameObject {
         if (this.sprite === undefined)
             return;
         const pos = this.getWorldPosition().subtract(this.sprite.size.divide(new Vector2D(2, 2)));
-        this.sprite!.drawImg(this.ctx, pos, this.sprite.size, this.sprite.rotation);
+
+        this.sprite!.drawImg(this.ctx, pos.add(this.sprite!.pos.toVector2D()), this.sprite.size, this.sprite.rotation);
     }
 
     previewHitbox() {
@@ -112,7 +115,7 @@ export class GameObject {
             return new Point2D(
                 this.position.x - this.game.camera.position.x,
                 this.position.y - this.game.camera.position.y
-            );
+            ).add(this.game.canvasSize.divide(new Vector2D(2,2)));
         }
         const parentPos = this.parent.getWorldPosition();
         return new Point2D(
@@ -121,9 +124,9 @@ export class GameObject {
         );
     }
 
-    update() {
-        this.velocity.x += this.acceleration.x;
-        this.velocity.y += this.acceleration.y;
+    update(delta) {
+        this.velocity.x += this.acceleration.x * delta;
+        this.velocity.y += this.acceleration.y * delta;
 
         // Clamp velocity to maximumVelocity if defined
         if (this.maximumVelocity) {
@@ -137,8 +140,8 @@ export class GameObject {
             );
         }
 
-        this.position.x += this.velocity.x;
-        this.position.y += this.velocity.y;
+        this.position.x += this.velocity.x * delta;
+        this.position.y += this.velocity.y * delta;
 
         this.collisions = [];
         if (this.hitbox !== undefined) {
@@ -177,19 +180,43 @@ export function createColoredImage(color: string, size: Vector2D): HTMLImageElem
     return img;
 }
 
-export class Sprite {
-    rotation: number = 0;
-    glow: Glow| null = new Glow();
-    blendMode: GlobalCompositeOperation = "source-over";
 
+export class Particle {
+    constructor(
+        public game: PongGame,
+        public lifespan: number,
+        public sprite: Sprite,
+        public position: Point2D
+    ) {
+        
+    }
+
+    draw() {
+        let pos = new Point2D(
+                this.position.x - this.game.camera.position.x,
+                this.position.y - this.game.camera.position.y
+            ).add(this.game.canvasSize.divide(new Vector2D(2,2)));
+        pos = pos.subtract(this.sprite.size.divide(new Vector2D(2, 2)));
+        this.sprite.drawImg(this.game.ctx, pos.add(this.sprite.pos.toVector2D()), this.sprite.size, 0);
+        console.log(this.sprite.pos);
+    }
+}
+
+
+export class Sprite {
     image: HTMLImageElement;
 
     constructor(
         imagePath: string | HTMLImageElement | null,
         public size: Vector2D = new Vector2D(0, 0),
+        public rotation: number = 0,
         public flippedHorizontal: boolean = false,
         public crop: boolean = false,
-        public outline: boolean = false
+        public outline: boolean = false,
+        public opacity: number = 1.0,
+        public blendMode: GlobalCompositeOperation = "source-over",
+        public glow: Glow| null = new Glow(),
+        public pos: Point2D = new Point2D(0,0)
     ) {
         const diameter = Math.max(size.x, size.y);
         const canvas = document.createElement('canvas');
@@ -223,6 +250,7 @@ export class Sprite {
             this.image.src = canvas.toDataURL();
         }
 
+        this.opacity = opacity;
         if (size.x === 0 && size.y === 0) {
             this.size = new Vector2D(this.image.width, this.image.height);
         }
@@ -232,36 +260,68 @@ export class Sprite {
         ctx: CanvasRenderingContext2D,
         pos: Point2D,
         size: Vector2D,
-        angle: number, // in radians
+        angle: number,
         glow: Glow = new Glow(),
-        // projection: number = 4
     ) {
-        ctx.save();
-        ctx.translate(pos.x + size.x / 2, pos.y + size.y / 2); // Move to center of image
-        ctx.rotate(angle);
-        ctx.globalCompositeOperation = this.blendMode;
+        // Draw glow pass
         if (this.glow) {
-            ctx.shadowColor = this.glow.shadowColor; // Glow color
-            ctx.shadowBlur = this.glow.shadowBlur;           // Glow strength
+            ctx.save();
+            ctx.globalAlpha = this.opacity;
+            ctx.globalCompositeOperation = this.glow.blendMode;
+            ctx.translate(pos.x + size.x / 2, pos.y + size.y / 2);
+            ctx.rotate(angle);
+            ctx.shadowColor = this.glow.shadowColor;
+            ctx.shadowBlur = this.glow.shadowBlur;
             ctx.shadowOffsetX = this.glow.shadowOffsetX;
             ctx.shadowOffsetY = this.glow.shadowOffsetY;
+            
+            ctx.drawImage(this.image, -size.x / 2, -size.y / 2, size.x, size.y);
+            ctx.restore();
         }
-        if (this.flippedHorizontal) 
-            ctx.scale(-1, 1); // Flip horizontally
 
-        // outline stroke section
+        // Draw sprite pass
+        ctx.save();
+        ctx.globalAlpha = this.opacity;
+        ctx.globalCompositeOperation = this.blendMode;
+        ctx.translate(pos.x + size.x / 2, pos.y + size.y / 2);
+        ctx.rotate(angle);
+        if (this.flippedHorizontal) ctx.scale(-1, 1);
+
         if (this.outline) {
             ctx.beginPath();
             const diameter = Math.max(size.x, size.y);
             ctx.arc(0, 0, diameter / 2, 0, Math.PI * 2);
-            ctx.strokeStyle = "black"; // You can replace "black" with a variable if needed
-            ctx.lineWidth = 2; // You can replace 2 with a variable if needed
+            ctx.strokeStyle = "black";
+            ctx.lineWidth = 2;
             ctx.stroke();
         }
 
-        ctx.drawImage(this.image, -size.x / 2, -size.y / 2, size.x, size.y); // Draw centered
-
+        ctx.drawImage(this.image, -size.x / 2, -size.y / 2, size.x, size.y);
         ctx.restore();
+    }
+
+    clone(): Sprite {
+        // Deep copy the image if possible, otherwise reuse reference
+        const clonedImage = new Image();
+        clonedImage.src = this.image.src;
+
+        return new Sprite(
+            clonedImage,
+            new Vector2D(this.size.x, this.size.y),
+            this.rotation,
+            this.flippedHorizontal,
+            this.crop,
+            this.outline,
+            this.opacity,
+            this.blendMode,
+            this.glow ? new Glow(
+                this.glow.shadowColor,
+                this.glow.shadowBlur,
+                this.glow.shadowOffsetX,
+                this.glow.shadowOffsetY
+            ) : null,
+            this.pos
+        );
     }
 }
 

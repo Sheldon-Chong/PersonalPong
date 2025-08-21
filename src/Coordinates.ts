@@ -4,26 +4,14 @@ export class Point2D {
         public y: number,
     ) {}
 
+    add(other: Vector2D)      { return new Point2D(this.x + other.x, this.y+ other.y); }
+    subtract(other: Vector2D) { return new Point2D(this.x - other.x, this.y - other.y); }
+    divide(other: Vector2D)   { return new Point2D(this.x / other.x, this.y / other.y); }
 
-    getCenter(other: Point2D): Point2D {
-        return new Point2D(
-            (this.x + other.x) / 2,
-            (this.y + other.y) / 2
-        );
-    }
+    getCenter(other: Point2D): Point2D { return this.add(other.toVector2D()).divide(new Vector2D(2,2)); }
 
-    add(other: Vector2D) {
-        this.x += other.x;
-        this.y += other.y;
-        return this;
-    }
-
-    subtract(other: Vector2D) {
-        return new Point2D(this.x - other.x, this.y - other.y);
-    }
-    divide(other: Vector2D) {
-        return new Point2D(this.x / other.x, this.y / other.y);
-    }
+    toVector2D() { return new Vector2D(this.x, this.y); }
+    clone(): Point2D { return new Point2D(this.x, this.y); }
 }
 
 export class Vector2D {
@@ -32,22 +20,11 @@ export class Vector2D {
         public y: number,
     ) {}
 
-    toPoint(): Point2D {
-        return new Point2D(this.x, this.y)
-    }
+    add(other: Vector2D)      { return new Vector2D(this.x + other.x, this.y + other.y); }
+    subtract(other: Vector2D) { return new Vector2D(this.x - other.x, this.y - other.y); }
+    divide(other: Vector2D)   { return new Vector2D(this.x / other.x, this.y / other.y); }
 
-    add(other: Vector2D) {
-        this.x += other.x;
-        this.y += other.y;
-    }
-
-    
-    subtract(other: Vector2D) {
-        return new Vector2D(this.x - other.x, this.y - other.y);
-    }
-    divide(other: Vector2D) {
-        return new Vector2D(this.x / other.x, this.y / other.y);
-    }
+    toPoint(): Point2D { return new Point2D(this.x, this.y) }
 }
 
 export function interpolate(pos: Point2D, pos2: Point2D, slowness: number):Point2D {

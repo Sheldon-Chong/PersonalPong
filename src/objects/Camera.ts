@@ -1,6 +1,6 @@
-import { GameObject, Sprite, HitBox, Glow} from '../GameUtils'
-import { Point2D, Vector2D, interpolate, randomBetween } from '../Coordinates'
-import { PongGame } from '../pong'
+import { Point2D, Vector2D, interpolate } from '../Coordinates';
+import { GameObject } from '../GameUtils';
+import { PongGame } from '../pong';
 
 export class Camera extends GameObject {
     shakeValue: Vector2D = new Vector2D(100,100);
@@ -14,8 +14,8 @@ export class Camera extends GameObject {
         this.position = startingPos;
         
         this.onUpdate = () => {
-            this.rawPosition = interpolate(this.rawPosition, this.target, 100);
-            this.position = this.rawPosition.add(new Vector2D(randomBetween(-this.shakeValue.x,this.shakeValue.x), randomBetween(-this.shakeValue.y,this.shakeValue.y)));
+            this.rawPosition = interpolate(this.rawPosition, new Point2D(this.game.ball.position.x, this.position.y), 80);
+            this.position = this.rawPosition; //.add(new Vector2D(randomBetween(-this.shakeValue.x,this.shakeValue.x), randomBetween(-this.shakeValue.y,this.shakeValue.y)));
             this.shakeValue = this.shakeValue.divide(new Vector2D(1.1, 1.1));
 
 

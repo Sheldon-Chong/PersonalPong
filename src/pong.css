@@ -1,4 +1,4 @@
-/* @tailwind base;
+@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
@@ -8,4 +8,4 @@ body {
 
 canvas {
   @apply rounded shadow-lg border-4 border-cyan-400 bg-gray-800;
-} */
+}

@@ -6,13 +6,18 @@
     <title>Pong2 Game</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.3/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/src/pong.css" />
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+
   </head>
   <body class="bg-gray-900 text-white min-h-screen flex items-center justify-center">
     <center>
     <div class="flex flex-col items-center justify-center h-screen w-screen overflow-auto">
       <h1 class="text-3xl font-bold mb-4">Barebones Pong Game</h1>
       <canvas id="pong-canvas" width="800" height="400" class="rounded-lg shadow-lg border-4 border-cyan-400 bg-gray-800 max-w-full"></canvas>
-    </div>
+<div class="mt-6 flex justify-between items-center" style="width:1000px; height:120px; border-radius:16px;">
+  <div class="h-20 bg-gray-500 rounded-2xl" style="width:450px; height:120px"></div>
+  <div class="h-20 bg-gray-500 rounded-2xl hover:bg-gray-400" style="width:450px; height:120px"></div>
+</div>    </div>
     </center>
     <script type="module" src="/src/pong.ts"></script>
   </body>

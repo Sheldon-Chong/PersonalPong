@@ -31,7 +31,7 @@ class GameTeam {
 
 export class Padel extends GameObject {
     isMoving: boolean = false;
-    sprite: Sprite = new Sprite({imagePath: "assets/ghost2.webp", size: new Vector2D(60, 60)});
+    sprite: Sprite = new Sprite({imagePath: "assets/skins/ghost_blue.png", size: new Vector2D(60, 60)});
     hitbox: HitBox;
     maximumVelocity: Vector2D;
 
@@ -56,8 +56,9 @@ export class Padel extends GameObject {
             this.game.gameSettings.playerAcceleration * 10
         );
         this.sprite = player.skin ? player.skin : this.sprite; 
-        this.sprite.glow!.blendMode = "screen";
-        this.sprite.blendMode = "lighter";
+        this.sprite.glow = new Glow("#3731FE", 10, 0, 5, BlendMode.Multiply);
+
+        // this.sprite.blendMode = "lighter";
 
         this.hitbox = new HitBox(this);
 
@@ -99,12 +100,18 @@ export class Padel extends GameObject {
             copied.opacity = 0.1;
             copied.blendMode = "color";
             copied.glow = null;
-            this.game.particles.push(new Particle(this.game, 120, copied, new Point2D(this.position.x, this.position.y)));
+            this.game.particles.push(new Particle(this.game, 120, copied, this.position.clone(), (instance) => {
+                instance.sprite.opacity *= 0.96;
+            }));
 
             return true;
         }
         this.addChild(new Arrow(this.game));
     }
+}
+
+export class Filter {
+    test: BlendMode;
 }
 
 export class PongGame {
@@ -152,19 +159,22 @@ export class PongGame {
     }
 
     loop = () => {
+        // update delta time
         this.updateDeltaTime();
 
-        for (const obj of this.gameObjects) {
+        // update objects
+        for (const obj of this.gameObjects) 
             obj.update(this.delta);
-        }
-
-        for (const timer of this.timers) {
-            timer.update();
-        }
         
+        // updpate timers
+        for (const timer of this.timers) 
+            timer.update();
+        
+        // update particles
         for (let i = this.particles.length - 1; i >= 0; i--) {
             let particle = this.particles[i];
-            this.particles[i].sprite.opacity -= 0.004;
+            // this.particles[i].sprite.opacity -= 0.004;
+            particle.update();
             if (!particle.isAlive()) {
                 this.particles.splice(i, 1);
             }
@@ -197,7 +207,7 @@ export class PongGame {
     constructor(canvas: HTMLCanvasElement) {
         // this.camera = this.addObject(new Camera(new Point2D(0,0), this)) as Camera;
         this.canvas = canvas;
-        this.canvasSize = new Vector2D(1500, 500); // Set desired canvas size here
+        this.canvasSize = new Vector2D(1500, 500).multiply(0.9); // Set desired canvas size here
 
         this.canvas.width = this.canvasSize.x;
         this.canvas.height = this.canvasSize.y;
@@ -205,6 +215,8 @@ export class PongGame {
         this.canvas.style.border = "4px solid #ffffff";
         this.canvas.style.borderRadius = "20px";
 
+
+        
         let players: Player[] = [
             new Player({name: "player1asjdklasd", profileImage: "assets/profile1.webp"}),
             new Player({name: "player2", profileImage: "assets/profile2.webp", skin: this.sprites[4]}),
@@ -231,7 +243,10 @@ export class PongGame {
         }
 
 
+        let bg = new Sprite({imagePath: "./assets/Frame 1 (1).png", size: new Vector2D(2000,500)});
+        console.log(bg.size);
 
+        this.addObject(new Image(this, new Point2D(0,0), bg));
         // INITIALIZE TEAMS AND SCORES
 
         this.team1.scoreUI = this.addObject(new Label("none", new Point2D(-500, 0), this, "bold 100px Arial" , "#4C568C")) as Label;

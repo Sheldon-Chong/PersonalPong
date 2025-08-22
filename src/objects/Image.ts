@@ -8,7 +8,7 @@ export class Image extends GameObject {
         this.sprite = sprite;
     }
     
-    Draw(): void {
-        this.sprite?.drawImg(this.game.ctx, new Point2D(0,0), this.sprite.size, 0);
-    }
+    // Draw(): void {
+    //     this.sprite?.drawImg(this.game.ctx, new Point2D(0,0), this.sprite.size, 0);
+    // }
 }

@@ -1,6 +1,6 @@
-import { Point2D, Vector2D, interpolate } from '../Coordinates'
+import { Point2D, Vector2D, interpolate, randomBetween } from '../Coordinates'
 import { PongGame, Team, Padel } from '../pong'
-import { GameObject, Sprite, HitBox, Glow, createColoredImage, shiftImageHue, Particle, Timer } from '../GameUtils'
+import { GameObject, Sprite, HitBox, Glow, createColoredImage, shiftImageHue, Particle, Timer, BlendMode } from '../GameUtils'
 import { Goal } from './Goal'
 
 export class Ball extends GameObject {
@@ -23,6 +23,19 @@ export class Ball extends GameObject {
             this.game.team1.score++;
         this.onGoal = true;
         this.game.camera.shakeValue = new Vector2D(100,100);
+
+        for (let i = 0; i < 10; i ++) {
+            this.game.particles.push(new Particle(this.game, 500, new Sprite({size: new Vector2D(10,10)}), this.position.clone(), (instance) => {
+                if (instance.direction === 0) {
+                    instance.direction = randomBetween(1, 360);
+                    instance.speed = randomBetween(500, 1000);
+                }
+                instance.position = instance.position.move(instance.direction, instance.speed * this.game.delta);
+                instance.sprite.size = instance.sprite.size.subtract((new Vector2D(20, 20)).multiply(this.game.delta));
+                console.log(instance.sprite.size);
+            }));
+        }
+
 
         this.game.newTimer(2, () => {
             this.game.camera.rawPosition = new Point2D(0,0);
@@ -67,14 +80,15 @@ export class Ball extends GameObject {
         super(startingPosition, game);
         // this.size = new Vector2D(25, 25);
         this.sprite = new Sprite({
-            imagePath: "assets/pacman.png", size: new Vector2D(40, 40),
-            glow: new Glow("#fc650d", 7),
+            imagePath: "assets/ball.png", size: new Vector2D(40, 40),
+            glow: new Glow("#3C2000", 10, 0, 0, BlendMode.Multiply),
         });
         this.hitbox = new HitBox(this, this.sprite.size);
         this.name = "ball";
         // this.lastPadelHit = this.game;
 
         this.onCollide = (other) => {
+
             if (other instanceof Padel) {
 
                 if (this.lastPadelHit && 
@@ -111,7 +125,10 @@ export class Ball extends GameObject {
                 this.position.y = this.game.canvasSize.y / 2;
                 this.velocity.y *= -1;
             }
-
+            this.game.particles.push(new Particle(this.game, 300, new Sprite({size: new Vector2D(10,10), glow: null}), this.position.clone(), (instance) => {
+                instance.position = instance.position.move(instance.direction, instance.speed * this.game.delta);
+                instance.sprite.size = instance.sprite.size.subtract((new Vector2D(33, 33)).multiply(this.game.delta));
+            }));
 
             // let particle = new Particle(this.game, 10, this.sprite.clone(), this.position.clone());
             // particle.sprite.glow = null;

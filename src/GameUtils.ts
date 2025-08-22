@@ -217,7 +217,10 @@ export class Particle {
         public game: PongGame,
         public lifespanMs: number, // lifespan in milliseconds
         public sprite: Sprite,
-        public position: Point2D
+        public position: Point2D,
+        public onUpdate: (instance: Particle) => void,
+        public direction = 0,
+        public speed = 0
     ) {
         this.createdAt = performance.now();
     }
@@ -229,6 +232,11 @@ export class Particle {
             ).add(this.game.canvasSize.divide(new Vector2D(2,2)));
         pos = pos.subtract(this.sprite.size.divide(new Vector2D(2, 2)));
         this.sprite.drawImg(this.game.ctx, pos.add(this.sprite.pos.toVector2D()), this.sprite.size, 0);
+    }
+
+    update() {
+        if (this.onUpdate) this.onUpdate(this);
+        // ...other update logic...
     }
 
     isAlive(): boolean {

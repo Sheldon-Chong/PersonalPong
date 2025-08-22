@@ -134,6 +134,7 @@ export class GameObject {
                 -Math.abs(this.maximumVelocity.x),
                 Math.min(this.velocity.x, Math.abs(this.maximumVelocity.x))
             );
+
             this.velocity.y = Math.max(
                 -Math.abs(this.maximumVelocity.y),
                 Math.min(this.velocity.y, Math.abs(this.maximumVelocity.y))
@@ -198,10 +199,29 @@ export class Particle {
             ).add(this.game.canvasSize.divide(new Vector2D(2,2)));
         pos = pos.subtract(this.sprite.size.divide(new Vector2D(2, 2)));
         this.sprite.drawImg(this.game.ctx, pos.add(this.sprite.pos.toVector2D()), this.sprite.size, 0);
-        console.log(this.sprite.pos);
     }
 }
 
+export class Timer extends GameObject{
+    private startTime: number;
+    private duration: number;
+    private callback: () => void;
+    private triggered: boolean = false;
+
+    constructor(game: PongGame, durationSeconds: number, callback: () => void) {
+        super(new Point2D(0,0), game);
+        this.startTime = performance.now();
+        this.duration = durationSeconds * 1000;
+        this.callback = callback;
+    }
+
+    update() {
+        if (!this.triggered && (performance.now() - this.startTime) >= this.duration) {
+            this.triggered = true;
+            this.callback();
+        }
+    }
+}
 
 export class Sprite {
     image: HTMLImageElement;
@@ -274,7 +294,7 @@ export class Sprite {
             ctx.shadowBlur = this.glow.shadowBlur;
             ctx.shadowOffsetX = this.glow.shadowOffsetX;
             ctx.shadowOffsetY = this.glow.shadowOffsetY;
-            
+            if (this.flippedHorizontal) ctx.scale(-1, 1);
             ctx.drawImage(this.image, -size.x / 2, -size.y / 2, size.x, size.y);
             ctx.restore();
         }

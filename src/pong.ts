@@ -175,6 +175,7 @@ class Player {
     constructor(params: Partial<Player> = {}) {
         Object.assign(this, params);
     }
+
 }
 
 
@@ -217,8 +218,10 @@ export class PongGame {
     loop = () => {
         const now = performance.now();
         this.delta = (now - this.lastFrameTime) / 1000; // seconds
+        const MAX_DELTA = 10; // 50 ms, adjust as needed
         this.lastFrameTime = now;
         this.fps = 1 / this.delta;
+        this.delta = Math.min(this.delta, MAX_DELTA);
 
         for (const obj of this.gameObjects) {
             obj.update(this.delta);
@@ -340,6 +343,10 @@ export class PongGame {
         this.addObject(new Goal(this, Team.TEAM2));
 
         this.loop();
+        // this.addGameObject(new Timer(this, 5, () => {
+        //     // callback logic here
+        //     console.log("Timer finished!");
+        // }))
 
         // Add TextObjects for player names above paddles
         // this.addObject(new TextObject("Player 1", new Point2D(100, 100), this));

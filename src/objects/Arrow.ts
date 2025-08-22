@@ -8,7 +8,7 @@ export class Arrow extends GameObject{
 
     constructor (game: PongGame) {
         super(new Point2D(0, 0), game);
-        this.sprite = new Sprite("assets/arrow.png",new Vector2D(30,30));
+        this.sprite = new Sprite({imagePath: "assets/arrow.png", size: new Vector2D(30,30)});
 
         this.onUpdate = () => {
             this.position.x = 50;

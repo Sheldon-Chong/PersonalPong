@@ -11,11 +11,11 @@ export class Goal extends GameObject {
     constructor(game: PongGame, public team) {
         if (team === Team.TEAM1) {
             super(new Point2D(getLastItem(game.team1.players).position.x + 200,0), game);
-            this.sprite = new Sprite(null,new Vector2D(100,game.canvasSize.y + 200));
+            this.sprite = new Sprite({size: new Vector2D(100,game.canvasSize.y + 400)});
         }
         else {
             super(new Point2D(getLastItem(game.team2.players).position.x -200,0), game);
-            this.sprite = new Sprite(null,new Vector2D(100,game.canvasSize.y + 200));
+            this.sprite = new Sprite({size: new Vector2D(100,game.canvasSize.y + 400)});
         }
         this.hitbox = new HitBox(this, new Vector2D(20, 1000));
     }

@@ -65,9 +65,11 @@ export class Ball extends GameObject {
         public game: PongGame
     ) {
         super(startingPosition, game);
-        this.size = new Vector2D(25, 25);
-        this.sprite = new Sprite("assets/pacman.png", new Vector2D(40, 40));
-        this.sprite.glow = new Glow("#fc650d", 7);
+        // this.size = new Vector2D(25, 25);
+        this.sprite = new Sprite({
+            imagePath: "assets/pacman.png", size: new Vector2D(40, 40),
+            glow: new Glow("#fc650d", 7),
+        });
         this.hitbox = new HitBox(this, this.sprite.size);
         this.name = "ball";
         // this.lastPadelHit = this.game;

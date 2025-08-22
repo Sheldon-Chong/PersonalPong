@@ -31,7 +31,7 @@ class GameTeam {
 
 export class Padel extends GameObject {
     isMoving: boolean = false;
-    sprite: Sprite = new Sprite("assets/ghost2.webp", new Vector2D(60, 60));
+    sprite: Sprite = new Sprite({imagePath: "assets/ghost2.webp", size: new Vector2D(60, 60)});
     hitbox: HitBox;
     maximumVelocity: Vector2D;
 
@@ -112,16 +112,6 @@ export class PongGame {
     ctx: CanvasRenderingContext2D;
     canvasSize: Vector2D;
 
-    gameObjects: GameObject[] = [];
-
-    ball: Ball;
-    camera: Camera = this.addObject(new Camera(new Point2D(0,-100), this)) as Camera;
-    gameSettings: GameSettings = new GameSettings();
-
-    
-    team1: GameTeam = new GameTeam(this, Team.TEAM1);
-    team2: GameTeam = new GameTeam(this, Team.TEAM2);
-
     sprites: Sprite[] = [];
 
     lastFrameTime: number = performance.now();
@@ -130,7 +120,15 @@ export class PongGame {
 
     particles: Particle[] = [];
     timers: Timer[] = [];
+    gameObjects: GameObject[] = [];
     filter: Image[] =[];
+
+    team1: GameTeam = new GameTeam(this, Team.TEAM1);
+    team2: GameTeam = new GameTeam(this, Team.TEAM2);
+    
+    ball: Ball;
+    camera: Camera = this.addObject(new Camera(new Point2D(0,-100), this)) as Camera;
+    gameSettings: GameSettings = new GameSettings();
 
     renderFrame() {
         this.ctx.fillStyle = "#2B304B";
@@ -200,7 +198,7 @@ export class PongGame {
         // this.camera = this.addObject(new Camera(new Point2D(0,0), this)) as Camera;
         this.canvas = canvas;
         this.canvasSize = new Vector2D(1500, 500); // Set desired canvas size here
-        
+
         this.canvas.width = this.canvasSize.x;
         this.canvas.height = this.canvasSize.y;
 
@@ -232,13 +230,15 @@ export class PongGame {
                 this.team1.players.push(new Padel(new Point2D(((i-1) * distance) + offset, 0), this, Team.TEAM2, players[i]));
         }
 
-        this.ball = this.addObject(new Ball(new Point2D(0, 0), this)) as Ball;
-        this.ball.velocity.x = this.gameSettings.ballSpeed;
+
 
         // INITIALIZE TEAMS AND SCORES
 
         this.team1.scoreUI = this.addObject(new Label("none", new Point2D(-500, 0), this, "bold 100px Arial" , "#4C568C")) as Label;
         this.team2.scoreUI = this.addObject(new Label("none", new Point2D(500, 0), this, "bold 100px Arial" , "#4C568C")) as Label;
+
+        this.ball = this.addObject(new Ball(new Point2D(0, 0), this)) as Ball;
+        this.ball.velocity.x = this.gameSettings.ballSpeed;
 
         // Add all paddles from both teams
         for (const padel of this.team1.players) this.addObject(padel);
@@ -248,14 +248,14 @@ export class PongGame {
         this.addObject(new Goal(this, Team.TEAM2));
         
         
-        let sprite = new Sprite("Black.png", this.canvasSize);
+        let sprite = new Sprite({imagePath: "Black.png", size: this.canvasSize});
         sprite.blendMode = BlendMode.Color;
         sprite.glow = null;
         let image = new Image(this, new Point2D(0, 0), sprite);
         this.addObject(image);
         this.filter.push(image);
 
-        let sprite2 = new Sprite(null, this.canvasSize);
+        let sprite2 = new Sprite({imagePath: null, size: this.canvasSize});
         sprite2.blendMode = BlendMode.Difference;
         sprite2.glow = null;
         let image2 = new Image(this, new Point2D(0, 0), sprite2);

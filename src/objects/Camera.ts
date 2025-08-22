@@ -14,7 +14,7 @@ export class Camera extends GameObject {
         this.position = startingPos;
         
         this.onUpdate = () => {
-            this.rawPosition = interpolate(this.rawPosition, new Point2D(this.game.ball.position.x, this.position.y), 80);
+            this.rawPosition = interpolate(this.rawPosition, new Point2D(this.game.ball.position.x, 0), 80);
             this.position = this.rawPosition.add(new Vector2D(randomBetween(-this.shakeValue.x,this.shakeValue.x), randomBetween(-this.shakeValue.y,this.shakeValue.y)));
             this.shakeValue = this.shakeValue.divide(new Vector2D(1.03, 1.03));
             if (this.shakeValue.x > 60) {

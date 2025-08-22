@@ -260,42 +260,44 @@ export class Timer extends GameObject{
 export class Sprite {
     image: HTMLImageElement;
 
-    constructor(
-        imagePath: string | HTMLImageElement | null,
-        public size: Vector2D = new Vector2D(0, 0),
-        public rotation: number = 0,
-        public flippedHorizontal: boolean = false,
-        public crop: boolean = false,
-        public outline: boolean = false,
-        public opacity: number = 1.0,
-        public blendMode: GlobalCompositeOperation = "source-over",
-        public glow: Glow| null = new Glow(),
-        public pos: Point2D = new Point2D(0,0)
-    ) {
-        const diameter = Math.max(size.x, size.y);
+    imagePath: string | HTMLImageElement | null = null;
+    size: Vector2D = new Vector2D(0, 0);
+    rotation: number = 0;
+    flippedHorizontal: boolean = false;
+    crop: boolean = false;
+    outline: boolean = false;
+    opacity: number = 1.0;
+    blendMode: GlobalCompositeOperation = "source-over";
+    glow: Glow| null = new Glow();
+    pos: Point2D = new Point2D(0,0);
+
+    constructor(params: Partial<Sprite> = {}) {
+        Object.assign(this, params);
+        const diameter = Math.max(this.size.x, this.size.y);
         const canvas = document.createElement('canvas');
         canvas.width = diameter;
         canvas.height = diameter;
         const ctx = canvas.getContext('2d');
         this.image = new Image();
 
-        if (imagePath instanceof HTMLImageElement) {
-            // Use the provided HTMLImageElement directly
-            this.image = imagePath;
-        } else if (ctx) {
+        if (this.imagePath instanceof HTMLImageElement) 
+            this.image = this.imagePath;
+        
+        else if (ctx) {
             ctx.save();
-            if (crop) {
+            if (this.crop) {
                 ctx.beginPath();
                 ctx.arc(diameter / 2, diameter / 2, diameter / 2, 0, Math.PI * 2);
                 ctx.closePath();
                 ctx.clip();
             }
             let img = new Image();
-            if (imagePath) {
-                img.src = imagePath;
-            } else {
-                img.src = createColoredImage("#ffffff", size).src;
-            }
+            if (this.imagePath) 
+                img.src = this.imagePath;
+            
+            else 
+                img.src = createColoredImage("#ffffff", this.size).src;
+            
             img.onload = () => {
                 ctx.drawImage(img, 0, 0, diameter, diameter);
                 this.image.src = canvas.toDataURL();
@@ -304,8 +306,8 @@ export class Sprite {
             this.image.src = canvas.toDataURL();
         }
 
-        this.opacity = opacity;
-        if (size.x === 0 && size.y === 0) {
+        this.opacity = this.opacity;
+        if (this.size.x === 0 && this.size.y === 0) {
             this.size = new Vector2D(this.image.width, this.image.height);
         }
     }
@@ -358,23 +360,24 @@ export class Sprite {
         const clonedImage = new Image();
         clonedImage.src = this.image.src;
 
-        return new Sprite(
-            clonedImage,
-            new Vector2D(this.size.x, this.size.y),
-            this.rotation,
-            this.flippedHorizontal,
-            this.crop,
-            this.outline,
-            this.opacity,
-            this.blendMode,
-            this.glow ? new Glow(
+        return new Sprite({
+            imagePath: clonedImage,
+            size: new Vector2D(this.size.x, this.size.y),
+            rotation: this.rotation,
+            flippedHorizontal: this.flippedHorizontal,
+            crop: this.crop,
+            outline: this.outline,
+            opacity: this.opacity,
+            blendMode: this.blendMode,
+            glow: this.glow ? new Glow(
                 this.glow.shadowColor,
                 this.glow.shadowBlur,
                 this.glow.shadowOffsetX,
-                this.glow.shadowOffsetY
+                this.glow.shadowOffsetY,
+                this.glow.blendMode
             ) : null,
-            this.pos
-        );
+            pos: this.pos
+        });
     }
 }
 

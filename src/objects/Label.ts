@@ -1,4 +1,4 @@
-import { GameObject, Sprite, HitBox, Glow} from '../GameUtils'
+import { GameObject } from '../GameUtils'
 import { Point2D, Vector2D, interpolate, randomBetween } from '../Coordinates'
 import { PongGame } from '../pong'
 

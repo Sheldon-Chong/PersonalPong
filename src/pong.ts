@@ -98,7 +98,7 @@ export class Padel extends GameObject {
 
             let copied = this.sprite.clone();
             copied.opacity = 0.1;
-            copied.blendMode = "color";
+            copied.blendMode = BlendMode.ColorDodge;
             copied.glow = null;
             this.game.particles.particles.push(new Particle(this.game, 120, copied, this.position.clone(), (instance) => {
                 instance.sprite.opacity *= 0.96;
@@ -158,6 +158,7 @@ export class PongGame {
     delta: number;
 
     particles: ParticleLayer;
+    particles2: ParticleLayer;
     timers: Timer[] = [];
     gameObjects: GameObject[] = [];
     filter: Image[] =[];
@@ -198,22 +199,25 @@ export class PongGame {
         this.updateDeltaTime();
 
         // update objects
-        for (const obj of this.gameObjects) 
+        for (const obj of this.gameObjects) {
+            if (obj instanceof ParticleLayer) {
+                for (let i = obj.particles.length - 1; i >= 0; i--) {
+                    let particle = obj.particles[i];
+                    particle.update();
+                    if (!particle.isAlive()) {
+                        obj.particles.splice(i, 1);
+                    }
+                }
+            }
             obj.update(this.delta);
+        }
         
         // updpate timers
         for (const timer of this.timers) 
             timer.update();
         
         // update particles
-        for (let i = this.particles.particles.length - 1; i >= 0; i--) {
-            let particle = this.particles.particles[i];
-            // this.particles[i].sprite.opacity -= 0.004;
-            particle.update();
-            if (!particle.isAlive()) {
-                this.particles.particles.splice(i, 1);
-            }
-        }
+
 
         this.renderFrame();
         requestAnimationFrame(this.loop);
@@ -270,22 +274,46 @@ export class PongGame {
         const offset = 250;
         const distance = 200;
 
-        for (let i = 0; i < players.length; i ++) {
-            if (i % 2 === 0) 
-                this.team2.players.push(new Padel(new Point2D((i*distance*-1) - offset, 0), this, Team.TEAM1, players[i], "s", "w"));
-            else 
-                this.team1.players.push(new Padel(new Point2D(((i-1) * distance) + offset, 0), this, Team.TEAM2, players[i]));
-        }
-
-
         let bg = new Sprite({imagePath: "./assets/Frame 1 (1).png", size: new Vector2D(2000,500), glow: null});
         console.log(bg.size);
 
         this.addObject(new Image(this, new Point2D(0,0), bg));
         // INITIALIZE TEAMS AND SCORES
+        this.particles = this.addObject(new ParticleLayer(this)) as ParticleLayer;
+
+
+        for (let i = 0; i < players.length; i ++) {
+            if (i % 2 === 0) {
+                let padel = new Padel(new Point2D((i*distance*-1) - offset, 0), this, Team.TEAM1, players[i], "s", "w");
+                this.team2.players.push(padel);
+                this.addObject(padel);
+                this.addObject(new nonParentSprite( this, this.team2.players[this.team2.players.length - 1], new Sprite(
+                    {imagePath: "./assets/skins/components/eyes.png", size: new Vector2D(38,24), pos: new Point2D(-3, -3)}
+                ), 1.3))
+
+                this.addObject(new nonParentSprite( this, padel, new Sprite(
+                    {imagePath: "./assets/skins/components/iris.png", size: new Vector2D(30,12), pos: new Point2D(-8, -3)}
+                ), 1.6))
+            }
+            else {
+                let padel = new Padel(new Point2D(((i-1) * distance) + offset, 0), this, Team.TEAM2, players[i]);
+                
+                this.team1.players.push(padel);
+                this.addObject(padel);
+
+                this.addObject(new nonParentSprite( this, padel, new Sprite(
+                    {imagePath: "./assets/skins/components/eyes.png", size: new Vector2D(38,24), pos: new Point2D(-3, -3)}
+                ), 1.3))
+
+                this.addObject(new nonParentSprite( this, padel, new Sprite(
+                    {imagePath: "./assets/skins/components/iris.png", size: new Vector2D(30,12), pos: new Point2D(-8, -3)}
+                ), 1.6))
+            }
+        }
+
+
 
         
-        this.particles = this.addObject(new ParticleLayer(this)) as ParticleLayer;
 
         this.team1.scoreUI = this.addObject(new Label("none", new Point2D(-500, 0), this, "bold 100px Arial" , "#4C568C")) as Label;
         this.team2.scoreUI = this.addObject(new Label("none", new Point2D(500, 0), this, "bold 100px Arial" , "#4C568C")) as Label;
@@ -293,9 +321,6 @@ export class PongGame {
         this.ball = this.addObject(new Ball(new Point2D(0, 0), this)) as Ball;
         this.ball.velocity.x = this.gameSettings.ballSpeed;
 
-        // Add all paddles from both teams
-        for (const padel of this.team1.players) this.addObject(padel);
-        for (const padel of this.team2.players) this.addObject(padel);
 
         this.addObject(new Goal(this, Team.TEAM1));
         this.addObject(new Goal(this, Team.TEAM2));
@@ -315,13 +340,8 @@ export class PongGame {
         this.addObject(image2);
         this.filter.push(image2);
 
-        this.addObject(new nonParentSprite( this, this.team1.players[0], new Sprite(
-            {imagePath: "./assets/skins/components/eyes.png", size: new Vector2D(38,24), pos: new Point2D(-3, -3)}
-        ), 1.3))
 
-        this.addObject(new nonParentSprite( this, this.team1.players[0], new Sprite(
-            {imagePath: "./assets/skins/components/iris.png", size: new Vector2D(30,12), pos: new Point2D(-8, -3)}
-        ), 1.6))
+        this.particles2 = this.addObject(new ParticleLayer(this)) as ParticleLayer;
 
 
         this.loop();

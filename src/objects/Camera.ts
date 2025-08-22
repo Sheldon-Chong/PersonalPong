@@ -16,16 +16,19 @@ export class Camera extends GameObject {
         this.onUpdate = () => {
             this.rawPosition = interpolate(this.rawPosition, new Point2D(this.game.ball.position.x, 0), 80);
             this.position = this.rawPosition.add(new Vector2D(randomBetween(-this.shakeValue.x,this.shakeValue.x), randomBetween(-this.shakeValue.y,this.shakeValue.y)));
-            this.shakeValue = this.shakeValue.divide(new Vector2D(1.03, 1.03));
-            if (this.shakeValue.x > 60) {
-                for (const filter of this.game.filter) {
-                    filter.sprite!.opacity = 1;
-                }
+            this.shakeValue = this.shakeValue.subtract((new Vector2D(170, 170)).multiply(this.game.delta));
+            if (this.shakeValue.x < 0) {
+                this.shakeValue = new Vector2D(0,0);
             }
-            else {
-                for (const filter of this.game.filter) {
-                    filter.sprite!.opacity = 0;
-                }
+
+            console.log((new Vector2D(65, 65)).multiply(this.game.delta));
+            // if (this.shakeValue.x > 60) {
+            //     for (const filter of this.game.filter) {
+            //         filter.sprite!.opacity = 1;
+            //     }
+            // }
+            for (const filter of this.game.filter) {
+                filter.sprite!.opacity = 0;
             }
 
             return true;

@@ -22,16 +22,24 @@ export class Ball extends GameObject {
         if (team === Team.TEAM2) 
             this.game.team1.score++;
         this.onGoal = true;
-        this.game.camera.shakeValue = new Vector2D(100,100);
+        this.game.camera.shakeValue = new Vector2D(80,80);
 
         for (let i = 0; i < 10; i ++) {
-            this.game.particles.particles.push(new Particle(this.game, 500, new Sprite({size: new Vector2D(10,10)}), this.position.clone(), (instance) => {
+            let rand = randomBetween(20,40);
+            let paths = [
+                 "assets/particles/particle (1).png"
+                ,"assets/particles/particle (2).png"
+                ,"assets/particles/particle (3).png"
+                ,"assets/particles/particle (4).png"
+            ]
+            const randomInt = Math.floor(Math.random() * 4); // 0, 1, 2, or 3
+            this.game.particles2.particles.push(new Particle(this.game, 700, new Sprite({imagePath: paths[randomInt] , size: new Vector2D(rand,rand)}), this.position.clone(), (instance) => {
                 if (instance.direction === 0) {
                     instance.direction = randomBetween(1, 360);
-                    instance.speed = randomBetween(500, 1000);
+                    instance.speed = randomBetween(200, 400);
                 }
                 instance.position = instance.position.move(instance.direction, instance.speed * this.game.delta);
-                instance.sprite.size = instance.sprite.size.subtract((new Vector2D(20, 20)).multiply(this.game.delta));
+                instance.sprite.size = instance.sprite.size.subtract((new Vector2D(40, 40)).multiply(this.game.delta));
                 console.log(instance.sprite.size);
             }));
         }

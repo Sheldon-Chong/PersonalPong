@@ -31,7 +31,7 @@ class GameTeam {
 
 export class Padel extends GameObject {
     isMoving: boolean = false;
-    sprite: Sprite = new Sprite({imagePath: "assets/skins/ghost_blue.png", size: new Vector2D(60, 60)});
+    sprite: Sprite = new Sprite({imagePath: "assets/skins/components/body.png", size: new Vector2D(60, 60)});
     hitbox: HitBox;
     maximumVelocity: Vector2D;
 
@@ -100,7 +100,7 @@ export class Padel extends GameObject {
             copied.opacity = 0.1;
             copied.blendMode = "color";
             copied.glow = null;
-            this.game.particles.push(new Particle(this.game, 120, copied, this.position.clone(), (instance) => {
+            this.game.particles.particles.push(new Particle(this.game, 120, copied, this.position.clone(), (instance) => {
                 instance.sprite.opacity *= 0.96;
             }));
 
@@ -114,6 +114,38 @@ export class Filter {
     test: BlendMode;
 }
 
+class ParticleLayer extends GameObject {
+    particles: Particle[] = []
+    
+    constructor (game: PongGame) {
+        super(new Point2D(0,0), game);
+    }
+}
+
+class nonParentSprite extends GameObject {
+    truePos: Point2D = new Point2D(0,0);
+
+    constructor(
+        game: PongGame, 
+        public target: GameObject, 
+        sprite: Sprite,
+        interpolateVal = 1.6
+    ) {
+        super(new Point2D(0,0), game);
+
+        this.sprite = sprite;
+
+        this.onUpdate = () => {
+
+            this.truePos = interpolate(this.truePos, target.position, interpolateVal);
+            this.position = this.truePos;
+
+            return true;
+        }
+    }
+}
+
+
 export class PongGame {
     canvas: HTMLCanvasElement;
     ctx: CanvasRenderingContext2D;
@@ -125,7 +157,7 @@ export class PongGame {
     fps: number = 0;
     delta: number;
 
-    particles: Particle[] = [];
+    particles: ParticleLayer;
     timers: Timer[] = [];
     gameObjects: GameObject[] = [];
     filter: Image[] =[];
@@ -138,12 +170,15 @@ export class PongGame {
     gameSettings: GameSettings = new GameSettings();
 
     renderFrame() {
-        this.ctx.fillStyle = "#2B304B";
+        this.ctx.fillStyle = "#8AC639";
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-        for (const particle of this.particles) {
-            particle.draw();
-        }
+
         for (const obj of this.gameObjects) {
+            if (obj instanceof ParticleLayer) {
+                for (const particle of obj.particles) {
+                    particle.draw();
+                }
+            }
             obj.Draw();
         }
     }
@@ -171,12 +206,12 @@ export class PongGame {
             timer.update();
         
         // update particles
-        for (let i = this.particles.length - 1; i >= 0; i--) {
-            let particle = this.particles[i];
+        for (let i = this.particles.particles.length - 1; i >= 0; i--) {
+            let particle = this.particles.particles[i];
             // this.particles[i].sprite.opacity -= 0.004;
             particle.update();
             if (!particle.isAlive()) {
-                this.particles.splice(i, 1);
+                this.particles.particles.splice(i, 1);
             }
         }
 
@@ -243,11 +278,14 @@ export class PongGame {
         }
 
 
-        let bg = new Sprite({imagePath: "./assets/Frame 1 (1).png", size: new Vector2D(2000,500)});
+        let bg = new Sprite({imagePath: "./assets/Frame 1 (1).png", size: new Vector2D(2000,500), glow: null});
         console.log(bg.size);
 
         this.addObject(new Image(this, new Point2D(0,0), bg));
         // INITIALIZE TEAMS AND SCORES
+
+        
+        this.particles = this.addObject(new ParticleLayer(this)) as ParticleLayer;
 
         this.team1.scoreUI = this.addObject(new Label("none", new Point2D(-500, 0), this, "bold 100px Arial" , "#4C568C")) as Label;
         this.team2.scoreUI = this.addObject(new Label("none", new Point2D(500, 0), this, "bold 100px Arial" , "#4C568C")) as Label;
@@ -276,6 +314,15 @@ export class PongGame {
         let image2 = new Image(this, new Point2D(0, 0), sprite2);
         this.addObject(image2);
         this.filter.push(image2);
+
+        this.addObject(new nonParentSprite( this, this.team1.players[0], new Sprite(
+            {imagePath: "./assets/skins/components/eyes.png", size: new Vector2D(38,24), pos: new Point2D(-3, -3)}
+        ), 1.3))
+
+        this.addObject(new nonParentSprite( this, this.team1.players[0], new Sprite(
+            {imagePath: "./assets/skins/components/iris.png", size: new Vector2D(30,12), pos: new Point2D(-8, -3)}
+        ), 1.6))
+
 
         this.loop();
     }

@@ -25,7 +25,7 @@ export class Ball extends GameObject {
         this.game.camera.shakeValue = new Vector2D(100,100);
 
         for (let i = 0; i < 10; i ++) {
-            this.game.particles.push(new Particle(this.game, 500, new Sprite({size: new Vector2D(10,10)}), this.position.clone(), (instance) => {
+            this.game.particles.particles.push(new Particle(this.game, 500, new Sprite({size: new Vector2D(10,10)}), this.position.clone(), (instance) => {
                 if (instance.direction === 0) {
                     instance.direction = randomBetween(1, 360);
                     instance.speed = randomBetween(500, 1000);
@@ -125,7 +125,7 @@ export class Ball extends GameObject {
                 this.position.y = this.game.canvasSize.y / 2;
                 this.velocity.y *= -1;
             }
-            this.game.particles.push(new Particle(this.game, 300, new Sprite({size: new Vector2D(10,10), glow: null}), this.position.clone(), (instance) => {
+            this.game.particles.particles.push(new Particle(this.game, 300, new Sprite({size: new Vector2D(10,10), glow: null}), this.position.clone(), (instance) => {
                 instance.position = instance.position.move(instance.direction, instance.speed * this.game.delta);
                 instance.sprite.size = instance.sprite.size.subtract((new Vector2D(33, 33)).multiply(this.game.delta));
             }));

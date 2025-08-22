@@ -276,7 +276,7 @@ export class Sprite {
     outline: boolean = false;
     opacity: number = 1.0;
     blendMode: GlobalCompositeOperation = "source-over";
-    glow: Glow| null = new Glow();
+    glow: Glow| null = null;
     pos: Point2D = new Point2D(0,0);
 
     constructor(params: Partial<Sprite> = {}) {

@@ -1,3 +1,32 @@
+export enum BlendMode {
+    SourceOver = "source-over",
+    SourceIn = "source-in",
+    SourceOut = "source-out",
+    SourceAtop = "source-atop",
+    DestinationOver = "destination-over",
+    DestinationIn = "destination-in",
+    DestinationOut = "destination-out",
+    DestinationAtop = "destination-atop",
+    Lighter = "lighter",
+    Copy = "copy",
+    Xor = "xor",
+    Multiply = "multiply",
+    Screen = "screen",
+    Overlay = "overlay",
+    Darken = "darken",
+    Lighten = "lighten",
+    ColorDodge = "color-dodge",
+    ColorBurn = "color-burn",
+    HardLight = "hard-light",
+    SoftLight = "soft-light",
+    Difference = "difference",
+    Exclusion = "exclusion",
+    Hue = "hue",
+    Saturation = "saturation",  
+    Color = "color",
+    Luminosity = "luminosity"
+}
+
 // Shift the hue of an image by a specified value (in degrees)
 export function shiftImageHue(img: HTMLImageElement, hueShift: number): HTMLImageElement {
     const canvas = document.createElement('canvas');
@@ -183,13 +212,14 @@ export function createColoredImage(color: string, size: Vector2D): HTMLImageElem
 
 
 export class Particle {
+    createdAt: number;
     constructor(
         public game: PongGame,
-        public lifespan: number,
+        public lifespanMs: number, // lifespan in milliseconds
         public sprite: Sprite,
         public position: Point2D
     ) {
-        
+        this.createdAt = performance.now();
     }
 
     draw() {
@@ -199,6 +229,10 @@ export class Particle {
             ).add(this.game.canvasSize.divide(new Vector2D(2,2)));
         pos = pos.subtract(this.sprite.size.divide(new Vector2D(2, 2)));
         this.sprite.drawImg(this.game.ctx, pos.add(this.sprite.pos.toVector2D()), this.sprite.size, 0);
+    }
+
+    isAlive(): boolean {
+        return (performance.now() - this.createdAt) < this.lifespanMs;
     }
 }
 
@@ -281,7 +315,6 @@ export class Sprite {
         pos: Point2D,
         size: Vector2D,
         angle: number,
-        glow: Glow = new Glow(),
     ) {
         // Draw glow pass
         if (this.glow) {

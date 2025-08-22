@@ -1,6 +1,7 @@
-import { Point2D, Vector2D, interpolate } from '../Coordinates';
-import { PongGame, Team, Padel, Goal } from '../pong';
+import { Point2D, Vector2D, interpolate } from '../Coordinates'
+import { PongGame, Team, Padel } from '../pong'
 import { GameObject, Sprite, HitBox, Glow, createColoredImage, shiftImageHue, Particle, Timer } from '../GameUtils'
+import { Goal } from './Goal'
 
 export class Ball extends GameObject {
     rotationAcceleration: number = 0;
@@ -8,30 +9,36 @@ export class Ball extends GameObject {
     lastPadelHit: Padel;
     collided: boolean = false;
     static MAX_BOUNCE_ANGLE = Math.PI / 3;
+    onGoal: boolean = false;
 
     hitbox: HitBox;
     sprite: Sprite;
 
     onHitGoal(team: string) {
-        const center =  new Point2D(0,0);
-        this.position = center;
-        this.game.camera.rawPosition = new Point2D(0,0);
-        this.game.camera.shakeValue = new Vector2D(30,30);
-        
+        this.velocity.x = 0;
+
         if (team === Team.TEAM1) 
             this.game.team2.score++;
         if (team === Team.TEAM2) 
             this.game.team1.score++;
-        
-        this.velocity.x = 0;
-        this.game.addGameObject(new Timer(this.game, 2, () => {
-            if (team === Team.TEAM1) 
-                this.velocity.x = -this.game.gameSettings.ballSpeed;
-            if (team === Team.TEAM2) 
-                this.velocity.x = this.game.gameSettings.ballSpeed;
+        this.onGoal = true;
+        this.game.camera.shakeValue = new Vector2D(100,100);
 
-            console.log("Timer finished!");
-        }))
+        this.game.newTimer(2, () => {
+            this.game.camera.rawPosition = new Point2D(0,0);
+            this.position = new Point2D(0,0);
+            this.onGoal = false;
+
+            this.velocity.x = 0;
+            this.game.newTimer(2, () => {
+                if (team === Team.TEAM1) 
+                    this.velocity.x = -this.game.gameSettings.ballSpeed;
+                if (team === Team.TEAM2) 
+                    this.velocity.x = this.game.gameSettings.ballSpeed;
+    
+                console.log("Timer finished!");
+            })
+        })
     }
     calculateAngle(other: Padel) {
         // Center positions
@@ -84,7 +91,7 @@ export class Ball extends GameObject {
                 this.collided = true;
             }
 
-            else if (other instanceof Goal) {
+            else if (other instanceof Goal && !this.onGoal) {
                 this.onHitGoal(other.team);
             }
 

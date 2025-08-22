@@ -40,13 +40,14 @@ export class Ball extends GameObject {
                 }
                 instance.position = instance.position.move(instance.direction, instance.speed * this.game.delta);
                 instance.sprite.size = instance.sprite.size.subtract((new Vector2D(40, 40)).multiply(this.game.delta));
+                instance.sprite.rotation += 30 * this.game.delta;
                 console.log(instance.sprite.size);
             }));
         }
 
 
         this.game.newTimer(2, () => {
-            this.game.camera.rawPosition = new Point2D(0,0);
+            // this.game.camera.rawPosition = new Point2D(0,0);
             this.position = new Point2D(0,0);
             this.onGoal = false;
 

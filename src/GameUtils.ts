@@ -231,7 +231,7 @@ export class Particle {
                 this.position.y - this.game.camera.position.y
             ).add(this.game.canvasSize.divide(new Vector2D(2,2)));
         pos = pos.subtract(this.sprite.size.divide(new Vector2D(2, 2)));
-        this.sprite.drawImg(this.game.ctx, pos.add(this.sprite.pos.toVector2D()), this.sprite.size, 0);
+        this.sprite.drawImg(this.game.ctx, pos.add(this.sprite.pos.toVector2D()), this.sprite.size, this.sprite.rotation);
     }
 
     update() {

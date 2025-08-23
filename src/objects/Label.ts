@@ -3,14 +3,15 @@ import { Point2D, Vector2D, interpolate, randomBetween } from '../Coordinates'
 import { PongGame } from '../pong'
 
 export class Label extends GameObject {
-    constructor(
-        public text: string,
-        position: Point2D,
-        public game: PongGame,
-        public font: string = "20px Arial",
-        public color: string = "black",
-    ) {
-        super(position, game);
+    public text: string;
+    declare position: Point2D;
+    declare game: PongGame;
+    public font: string = "20px Avant ";
+    public color: string = "black";
+
+    constructor(params) {
+        super(params.position, params.game);
+        Object.assign(this, params);
         this.hitbox = null;
         this.name = "string";
     }

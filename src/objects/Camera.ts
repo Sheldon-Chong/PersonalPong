@@ -23,7 +23,7 @@ export class Camera extends GameObject {
 
             // if (this.shakeValue.x > 60) {
             //     for (const filter of this.game.filter) {
-            //         filter.sprite!.opacity = 1;
+            //         filter.sprite!.opacity = 1;  
             //     }
             // }
             for (const filter of this.game.filter) {

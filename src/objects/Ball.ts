@@ -41,7 +41,6 @@ export class Ball extends GameObject {
                 instance.position = instance.position.move(instance.direction, instance.speed * this.game.delta);
                 instance.sprite.size = instance.sprite.size.subtract((new Vector2D(40, 40)).multiply(this.game.delta));
                 instance.sprite.rotation += 30 * this.game.delta;
-                console.log(instance.sprite.size);
             }));
         }
 
@@ -57,8 +56,6 @@ export class Ball extends GameObject {
                     this.velocity.x = -this.game.gameSettings.ballSpeed;
                 if (team === Team.TEAM2) 
                     this.velocity.x = this.game.gameSettings.ballSpeed;
-    
-                console.log("Timer finished!");
             })
         })
     }
@@ -107,7 +104,6 @@ export class Ball extends GameObject {
                         this.velocity.x = -this.game.gameSettings.ballSpeed;
                     else
                         this.velocity.x = this.game.gameSettings.ballSpeed;
-                    console.log("slowed");
                 }
                 else {
                     this.calculateAngle(other);

@@ -20,6 +20,9 @@ class GameTeam {
     players: Padel[] = [];
     scoreUI: Label;
 
+    static leftBoardControls = [["t", "g"], ["r", "f"], ["w", "s"]];
+    static rightBoardControls = [["y", "h"], ["o", "l"], ["ArrowUp", "ArrowDown"]];
+
     constructor(
         public game: PongGame,
         public name: String,
@@ -45,21 +48,23 @@ export class Padel extends GameObject {
     ) {
         super(position, game);
 
-        let label = new Label(this.player.name, new Point2D(0, -50), game, "15px Arial", "#ffffff");
-        this.addChild(label);
-
-        // const profileImage = new ProfileImage(this.game, this.player.profileImage);
-        // this.addChild(profileImage);
+        this.addChild(new Label({
+            text: this.player.name, 
+            position : new Point2D(0, -50), 
+            game: game,
+            font: "15px Century Gothic", 
+            color: "#ffffff"}));
 
         this.maximumVelocity = new Vector2D(
             this.game.gameSettings.playerAcceleration * 10, 
             this.game.gameSettings.playerAcceleration * 10
         );
         this.sprite = player.skin ? player.skin : this.sprite; 
+
+        // add shadow
         this.sprite.glow = new Glow("#3731FE", 10, 0, 5, BlendMode.Multiply);
 
-        // this.sprite.blendMode = "lighter";
-
+            
         this.hitbox = new HitBox(this);
 
         if (this.team === Team.TEAM1) {
@@ -108,25 +113,20 @@ export class Padel extends GameObject {
         }
         this.addChild(new Arrow(this.game));
 
+        const eyeOffset = this.team === Team.TEAM1 ? 3 : -3;
+        const irisOffset = this.team === Team.TEAM1 ? 8 : -8;
 
-        if (this.team == Team.TEAM1) {
-            this.addChild(new nonParentSprite( this.game, this, new Sprite(
-                {imagePath: "./assets/skins/components/eyes.png", size: new Vector2D(38,24), pos: new Point2D(3, -3)}
-            ), 85))
-    
-            this.addChild(new nonParentSprite( this.game, this, new Sprite(
-                {imagePath: "./assets/skins/components/iris.png", size: new Vector2D(30,12), pos: new Point2D(8, -3)}
-            ), 105))
-        }
-        else {
-            this.addChild(new nonParentSprite( this.game, this, new Sprite(
-                {imagePath: "./assets/skins/components/eyes.png", size: new Vector2D(38,24), pos: new Point2D(-3, -3)}
-            ), 85))
+        this.addChild(new TrailSprite(this.game, this, new Sprite({
+            imagePath: "./assets/skins/components/eyes.png",
+            size: new Vector2D(38, 24),
+            pos: new Point2D(eyeOffset, -3)
+        }), 85));
 
-            this.addChild(new nonParentSprite( this.game, this, new Sprite(
-                {imagePath: "./assets/skins/components/iris.png", size: new Vector2D(30,12), pos: new Point2D(-8, -3)}
-            ), 105))
-        }
+        this.addChild(new TrailSprite(this.game, this, new Sprite({
+            imagePath: "./assets/skins/components/iris.png",
+            size: new Vector2D(30, 12),
+            pos: new Point2D(irisOffset, -3)
+        }), 105));
     }
 }
 
@@ -142,7 +142,7 @@ class ParticleLayer extends GameObject {
     }
 }
 
-class nonParentSprite extends GameObject {
+class TrailSprite extends GameObject {
     truePos: Point2D = new Point2D(0,0);
 
     constructor(
@@ -156,7 +156,6 @@ class nonParentSprite extends GameObject {
         this.sprite = sprite;
 
         this.onUpdate = () => {
-            console.log(typeof target);
             this.truePos = interpolate(this.truePos, target.position, interpolateVal * this.game.delta);
 
             return true;
@@ -164,7 +163,6 @@ class nonParentSprite extends GameObject {
     }
 
     getWorldPosition(): Point2D {
-        // console.log("haiahi");
         return new Point2D(
             this.truePos.x - this.game.camera.position.x,
             this.truePos.y - this.game.camera.position.y
@@ -330,25 +328,36 @@ export class PongGame {
                 this.team2.players.push(padel);
                 this.addObject(padel);
 
+                padel.moveUpKey = GameTeam.leftBoardControls[(i)/2][0];
+                padel.moveDownKey = GameTeam.leftBoardControls[(i)/2][1];
             }
             else {
                 let padel = new Padel(new Point2D(((i-1) * distance) + offset, 0), this, Team.TEAM2, players[i]);
                 
+                padel.moveUpKey = GameTeam.rightBoardControls[(i-1)/2][0];
+                padel.moveDownKey = GameTeam.rightBoardControls[(i-1)/2][1];
                 this.team1.players.push(padel);
                 this.addObject(padel);
-
-
             }
         }
 
 
 
         
-
-        this.team1.scoreUI = this.addObject(new Label("none", new Point2D(-500, 0), this, "bold 100px Arial" , "#4C568C")) as Label;
-        this.team2.scoreUI = this.addObject(new Label("none", new Point2D(500, 0), this, "bold 100px Arial" , "#4C568C")) as Label;
-
-        this.ball = this.addObject(new Ball(new Point2D(0, 0), this)) as Ball;
+        this.team1.scoreUI = this.addObject(new Label({
+            text: "none",
+            position: new Point2D(-500, 0),
+            game: this,
+            font: "bold 100px Arial",
+            color: "#4C568C"
+        })) as Label;
+        this.team2.scoreUI = this.addObject(new Label({
+            text: "none",
+            position: new Point2D(500, 0),
+            game: this,
+            font: "bold 100px Arial",
+            color: "#4C568C"
+        })) as Label; this.ball = this.addObject(new Ball(new Point2D(0, 0), this)) as Ball;
         this.ball.velocity.x = this.gameSettings.ballSpeed;
 
 

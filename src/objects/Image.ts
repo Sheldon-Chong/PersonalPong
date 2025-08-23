@@ -1,5 +1,5 @@
-import { GameObject, Sprite, HitBox, Glow} from '../GameUtils'
-import { Point2D, Vector2D, interpolate, randomBetween } from '../Coordinates'
+import { GameObject, Sprite} from '../Index'
+import { Point2D, Vector2D} from '../Coordinates'
 import { PongGame, Team } from '../pong'
 
 export class Image extends GameObject {

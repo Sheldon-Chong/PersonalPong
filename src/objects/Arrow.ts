@@ -1,6 +1,6 @@
 import { Point2D, Vector2D, interpolate } from '../Coordinates';
 import { PongGame, Team, Padel } from '../pong';
-import { GameObject, Sprite, HitBox, Glow, createColoredImage, shiftImageHue, Particle, Timer } from '../GameUtils'
+import { GameObject, Sprite} from '../Index'
 
 export class Arrow extends GameObject{
     sprite: Sprite;

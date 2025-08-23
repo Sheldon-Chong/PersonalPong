@@ -1,6 +1,7 @@
 import { Point2D, Vector2D, interpolate, randomBetween } from '../Coordinates'
 import { PongGame, Team, Padel } from '../pong'
-import { GameObject, Sprite, HitBox, Glow, createColoredImage, shiftImageHue, Particle, Timer, BlendMode } from '../GameUtils'
+import { GameObject, Sprite, HitBox, Glow, Particle, Timer } from '../Index'
+import { BlendMode } from '../GameUtils'
 import { Goal } from './Goal'
 
 export class Ball extends GameObject {

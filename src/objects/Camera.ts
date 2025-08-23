@@ -1,5 +1,5 @@
 import { Point2D, Vector2D, interpolate,randomBetween } from '../Coordinates';
-import { GameObject } from '../GameUtils';
+import { GameObject, Ball } from '../Index';
 import { PongGame } from '../pong';
 
 export class Camera extends GameObject {

@@ -1,6 +1,7 @@
 
 import { Point2D, Vector2D, interpolate } from './Coordinates'
-import { GameObject, Sprite, HitBox, Glow, createColoredImage, shiftImageHue, Particle, Timer, BlendMode} from './GameUtils'
+import { GameObject, Sprite, HitBox, Glow, Particle, Timer} from './Index'
+import {  BlendMode } from './GameUtils'
 import { Label, Ball, Camera, Arrow, Goal, Image, Player } from './Index.ts'
 
 class GameSettings {

@@ -31,7 +31,7 @@ class GameTeam {
 
 export class Padel extends GameObject {
     isMoving: boolean = false;
-    sprite: Sprite = new Sprite({imagePath: "assets/skins/components/body.png", size: new Vector2D(60, 60)});
+    sprite: Sprite = new Sprite({imagePath: "assets/skins/ghost_light.png", size: new Vector2D(60, 60)});
     hitbox: HitBox;
     maximumVelocity: Vector2D;
 
@@ -107,6 +107,26 @@ export class Padel extends GameObject {
             return true;
         }
         this.addChild(new Arrow(this.game));
+
+
+        if (this.team == Team.TEAM1) {
+            this.addChild(new nonParentSprite( this.game, this, new Sprite(
+                {imagePath: "./assets/skins/components/eyes.png", size: new Vector2D(38,24), pos: new Point2D(3, -3)}
+            ), 85))
+    
+            this.addChild(new nonParentSprite( this.game, this, new Sprite(
+                {imagePath: "./assets/skins/components/iris.png", size: new Vector2D(30,12), pos: new Point2D(8, -3)}
+            ), 105))
+        }
+        else {
+            this.addChild(new nonParentSprite( this.game, this, new Sprite(
+                {imagePath: "./assets/skins/components/eyes.png", size: new Vector2D(38,24), pos: new Point2D(-3, -3)}
+            ), 85))
+
+            this.addChild(new nonParentSprite( this.game, this, new Sprite(
+                {imagePath: "./assets/skins/components/iris.png", size: new Vector2D(30,12), pos: new Point2D(-8, -3)}
+            ), 105))
+        }
     }
 }
 
@@ -136,12 +156,19 @@ class nonParentSprite extends GameObject {
         this.sprite = sprite;
 
         this.onUpdate = () => {
-
-            this.truePos = interpolate(this.truePos, target.position, interpolateVal);
-            this.position = this.truePos;
+            console.log(typeof target);
+            this.truePos = interpolate(this.truePos, target.position, interpolateVal * this.game.delta);
 
             return true;
         }
+    }
+
+    getWorldPosition(): Point2D {
+        // console.log("haiahi");
+        return new Point2D(
+            this.truePos.x - this.game.camera.position.x,
+            this.truePos.y - this.game.camera.position.y
+        ).add(this.game.canvasSize.divide(new Vector2D(2,2)));
     }
 }
 
@@ -171,7 +198,7 @@ export class PongGame {
     gameSettings: GameSettings = new GameSettings();
 
     renderFrame() {
-        this.ctx.fillStyle = "#8AC639";
+        this.ctx.fillStyle = "#000000";
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
         for (const obj of this.gameObjects) {
@@ -243,10 +270,22 @@ export class PongGame {
         return object;
     }
 
+    skins: Sprite[] = [];
+    skinNames: string[] = [
+        "ghost_42",
+        "ghost_blue",
+        "ghost_dark",
+        "ghost_green",
+        "ghost_light",
+        "ghost_purple",
+        "ghost_red",
+        "ghost_yellow",
+    ];
+
     constructor(canvas: HTMLCanvasElement) {
         // this.camera = this.addObject(new Camera(new Point2D(0,0), this)) as Camera;
         this.canvas = canvas;
-        this.canvasSize = new Vector2D(1500, 500).multiply(0.9); // Set desired canvas size here
+        this.canvasSize = new Vector2D(1500, 530).multiply(0.94); // Set desired canvas size here
 
         this.canvas.width = this.canvasSize.x;
         this.canvas.height = this.canvasSize.y;
@@ -254,16 +293,20 @@ export class PongGame {
         this.canvas.style.border = "4px solid #ffffff";
         this.canvas.style.borderRadius = "20px";
 
-
+        for (const skin of this.skinNames) {
+            this.skins.push(new Sprite({
+                size: new Vector2D(60, 60), 
+                imagePath: "./assets/skins/" + skin + ".png"}
+            ));
+        }
         
         let players: Player[] = [
             new Player({name: "player1asjdklasd", profileImage: "assets/profile1.webp"}),
-            new Player({name: "player2", profileImage: "assets/profile2.webp", skin: this.sprites[4]}),
-            new Player({name: "player3"}),
-            new Player({name: "player4"}),
-            new Player({name: "player5"}),
-            new Player({name: "player6"}),
-            // new Player("test"),
+            new Player({name: "player2", profileImage: "assets/profile2.webp", skin: this.skins[5]}),
+            new Player({name: "player3", skin: this.skins[3]}),
+            new Player({name: "player4", skin: this.skins[2]}),
+            new Player({name: "player5", skin: this.skins[5]}),
+            new Player({name: "player6", skin: this.skins[1]}),
         ];
 
         const ctx = this.canvas.getContext('2d')!;
@@ -274,8 +317,7 @@ export class PongGame {
         const offset = 250;
         const distance = 200;
 
-        let bg = new Sprite({imagePath: "./assets/Frame 1 (1).png", size: new Vector2D(2000,500), glow: null});
-        console.log(bg.size);
+        let bg = new Sprite({imagePath: "./assets/maps/map2.png", size: new Vector2D(2700,500), glow: null});
 
         this.addObject(new Image(this, new Point2D(0,0), bg));
         // INITIALIZE TEAMS AND SCORES
@@ -287,13 +329,7 @@ export class PongGame {
                 let padel = new Padel(new Point2D((i*distance*-1) - offset, 0), this, Team.TEAM1, players[i], "s", "w");
                 this.team2.players.push(padel);
                 this.addObject(padel);
-                this.addObject(new nonParentSprite( this, this.team2.players[this.team2.players.length - 1], new Sprite(
-                    {imagePath: "./assets/skins/components/eyes.png", size: new Vector2D(38,24), pos: new Point2D(-3, -3)}
-                ), 1.3))
 
-                this.addObject(new nonParentSprite( this, padel, new Sprite(
-                    {imagePath: "./assets/skins/components/iris.png", size: new Vector2D(30,12), pos: new Point2D(-8, -3)}
-                ), 1.6))
             }
             else {
                 let padel = new Padel(new Point2D(((i-1) * distance) + offset, 0), this, Team.TEAM2, players[i]);
@@ -301,13 +337,7 @@ export class PongGame {
                 this.team1.players.push(padel);
                 this.addObject(padel);
 
-                this.addObject(new nonParentSprite( this, padel, new Sprite(
-                    {imagePath: "./assets/skins/components/eyes.png", size: new Vector2D(38,24), pos: new Point2D(-3, -3)}
-                ), 1.3))
 
-                this.addObject(new nonParentSprite( this, padel, new Sprite(
-                    {imagePath: "./assets/skins/components/iris.png", size: new Vector2D(30,12), pos: new Point2D(-8, -3)}
-                ), 1.6))
             }
         }
 

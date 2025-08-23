@@ -21,7 +21,6 @@ export class Camera extends GameObject {
                 this.shakeValue = new Vector2D(0,0);
             }
 
-            console.log((new Vector2D(65, 65)).multiply(this.game.delta));
             // if (this.shakeValue.x > 60) {
             //     for (const filter of this.game.filter) {
             //         filter.sprite!.opacity = 1;

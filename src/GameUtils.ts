@@ -127,6 +127,10 @@ export class GameObject {
         const pos = this.getWorldPosition().subtract(this.sprite.size.divide(new Vector2D(2, 2)));
 
         this.sprite!.drawImg(this.ctx, pos.add(this.sprite!.pos.toVector2D()), this.sprite.size, this.sprite.rotation);
+        for (const child of this.children) {
+            child.Draw();
+        }
+        
     }
 
     previewHitbox() {
@@ -192,6 +196,10 @@ export class GameObject {
         }
         if (this.onUpdate !== undefined) {
             this.onUpdate();
+        }
+        for (const child of this.children) {
+            if (child.onUpdate)
+                child.onUpdate();
         }
     }
 }
@@ -279,6 +287,11 @@ export class Sprite {
     glow: Glow| null = null;
     pos: Point2D = new Point2D(0,0);
 
+    config(params: Partial<Sprite> ): Sprite {
+        Object.assign(this, params);
+        return this;
+    }
+    
     constructor(params: Partial<Sprite> = {}) {
         Object.assign(this, params);
         const diameter = Math.max(this.size.x, this.size.y);

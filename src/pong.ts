@@ -121,13 +121,13 @@ export class Padel extends GameObject {
             imagePath: "./assets/skins/components/eyes.png",
             size: new Vector2D(38, 24),
             pos: new Point2D(eyeOffset, -3)
-        }), 85));
+        }), 160));
 
         this.addChild(new TrailSprite(this.game, this, new Sprite({
             imagePath: "./assets/skins/components/iris.png",
             size: new Vector2D(30, 12),
             pos: new Point2D(irisOffset, -3)
-        }), 105));
+        }), 250));
     }
 }
 
